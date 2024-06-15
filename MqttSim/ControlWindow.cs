@@ -17,135 +17,112 @@ using static MqttSim.DisplayWindow;
 
 namespace MqttSim
 {
+    public class SetMqttBrokerConnectJob
+    {
+        public MqttClient Client { get; set; }
+        public string BrokerHostName { get; private set; }
+
+        public SetMqttBrokerConnectJob(string brokerHostName)
+        {
+            BrokerHostName = brokerHostName;
+        }
+
+        public virtual bool Run()
+        {
+            Client = new MqttClient(BrokerHostName);
+            string guid = Convert.ToString(Guid.NewGuid());
+            bool bSuccess = true;
+            try
+            {
+                Client.Connect(guid, "emqx", "public");
+            }
+            catch
+            {
+                bSuccess = false;
+            }
+
+            return bSuccess;
+        }
+    }
+
     public partial class ControlWindow : Form
     {
-        Queue<string> msgQueue = new Queue<string>();
-
-        private MqttClient _client;
+        private SetMqttBrokerConnectJob m_BrokerConnectJob { get; set; }
+        private Queue<HardwareInfo> m_QMsgContentToDisplayOnUI { get; set; }
 
         public ControlWindow()
         {
             InitializeComponent();
+            m_QMsgContentToDisplayOnUI = new Queue<HardwareInfo>();
 
-            checkBoxFan1.CheckStateChanged += new EventHandler(PerHWUnitCheckbox_CheckStateChanged);
-            checkBoxFan2.CheckStateChanged += new EventHandler(PerHWUnitCheckbox_CheckStateChanged);
-            checkBoxFan3.CheckStateChanged += new EventHandler(PerHWUnitCheckbox_CheckStateChanged);
-            checkBoxFan4.CheckStateChanged += new EventHandler(PerHWUnitCheckbox_CheckStateChanged);
+            CheckBox[] checkbox = new CheckBox[]
+            {
+                checkBoxFan1,
+                checkBoxFan2,
+                checkBoxFan3,
+                checkBoxFan4,
 
-            checkBoxLamp1.CheckStateChanged += new EventHandler(PerHWUnitCheckbox_CheckStateChanged);
-            checkBoxLamp2.CheckStateChanged += new EventHandler(PerHWUnitCheckbox_CheckStateChanged);
-            checkBoxLamp3.CheckStateChanged += new EventHandler(PerHWUnitCheckbox_CheckStateChanged);
-            checkBoxLamp4.CheckStateChanged += new EventHandler(PerHWUnitCheckbox_CheckStateChanged);
+                checkBoxLamp1,
+                checkBoxLamp2,
+                checkBoxLamp3,
+                checkBoxLamp4
+            };
 
-            _client = new MqttClient("broker.emqx.io");
-            string guid = Convert.ToString(Guid.NewGuid());
-            _client.Connect(guid, "emqx", "public");
-            _client.MqttMsgPublished += _client_MqttMsgPublished;
+            for (int i = 0; i < checkbox.Length; i++)
+            {
+                checkbox[i].CheckStateChanged += new EventHandler(PerHWUnitCheckbox_CheckStateChanged);
+            }
+
+            m_BrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
+            bool bEstablished = m_BrokerConnectJob.Run();
+            if (bEstablished)
+            {
+                m_BrokerConnectJob.Client.MqttMsgPublished += OnMqttMessagePublished;
+            }
 
         }
 
         private void checkBoxLoc_CheckStateChanged(object sender, EventArgs e)
         {
             CheckBox checkbox = (CheckBox)sender;
-            List<HWPayloadState> payloadList = new List<HWPayloadState>();
+            List<HardwareInfo> hardwareInfoList = new List<HardwareInfo>();
 
             switch (checkbox.Name)
             {
                 case "checkBoxLoc1":
-
-                    if (checkbox.Checked)
-                    {
-                        checkBoxLamp1.CheckState = CheckState.Indeterminate;
-                        checkBoxFan1.CheckState = CheckState.Indeterminate;
-                    }
-                    else
-                    {
-                        checkBoxLamp1.CheckState = CheckState.Unchecked;
-                        checkBoxFan1.CheckState = CheckState.Unchecked;
-                    }
-
-                    //if (checkbox.Checked)
-                    //{
-                    //    checkBoxLamp1.CheckState = CheckState.Indeterminate;
-                    //    checkBoxFan1.CheckState = CheckState.Indeterminate;
-                    //}
-                    //else
-                    //{
-                    //    checkBoxLamp1.CheckState = CheckState.Unchecked;
-                    //    checkBoxFan1.CheckState = CheckState.Unchecked;
-                    //}
-
-                    payloadList.Add(new HWPayloadState("L-ID1", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("F-ID1", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("L-ID1", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("F-ID1", (uint)(checkbox.Checked ? 1 : 0)));
                     break;
 
                 case "checkBoxLoc2":
-                    //if (checkbox.Checked)
-                    //{
-                    //    checkBoxLamp2.CheckState = CheckState.Indeterminate;
-                    //    checkBoxFan2.CheckState = CheckState.Indeterminate;
-                    //}
-                    //else
-                    //{
-                    //    checkBoxLamp2.CheckState = CheckState.Unchecked;
-                    //    checkBoxFan2.CheckState = CheckState.Unchecked;
-                    //}
-
-                    payloadList.Add(new HWPayloadState("L-ID2", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("F-ID2", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("L-ID2", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("F-ID2", (uint)(checkbox.Checked ? 1 : 0)));
                     break;
 
                 case "checkBoxLoc3":
-                    //if (checkbox.Checked)
-                    //{
-                    //    checkBoxLamp3.CheckState = CheckState.Indeterminate;
-                    //    checkBoxFan3.CheckState = CheckState.Indeterminate;
-                    //}
-                    //else
-                    //{
-                    //    checkBoxLamp3.CheckState = CheckState.Unchecked;
-                    //    checkBoxFan3.CheckState = CheckState.Unchecked;
-                    //}
-
-                    payloadList.Add(new HWPayloadState("L-ID3", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("F-ID3", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("L-ID3", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("F-ID3", (uint)(checkbox.Checked ? 1 : 0)));
                     break;
 
                 case "checkBoxLoc4":
-                    //if (checkbox.Checked)
-                    //{
-                    //    checkBoxLamp4.CheckState = CheckState.Indeterminate;
-                    //    checkBoxFan4.CheckState = CheckState.Indeterminate;
-                    //}
-                    //else
-                    //{
-                    //    checkBoxLamp4.CheckState = CheckState.Unchecked;
-                    //    checkBoxFan4.CheckState = CheckState.Unchecked;
-                    //}
-
-                    payloadList.Add(new HWPayloadState("L-ID4", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("F-ID4", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("L-ID4", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("F-ID4", (uint)(checkbox.Checked ? 1 : 0)));
                     break;
 
                 case "checkBoxShutdownAll":
                 default:
-                    //checkBoxLoc1.Checked = checkbox.Checked;
-                    //checkBoxLoc2.Checked = checkbox.Checked;
-                    //checkBoxLoc3.Checked = checkbox.Checked;
-                    //checkBoxLoc4.Checked = checkbox.Checked;
-
-                    payloadList.Add(new HWPayloadState("L-ID1", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("F-ID1", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("L-ID2", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("F-ID2", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("L-ID3", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("F-ID3", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("L-ID4", (uint)(checkbox.Checked ? 1 : 0)));
-                    payloadList.Add(new HWPayloadState("F-ID4", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("L-ID1", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("F-ID1", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("L-ID2", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("F-ID2", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("L-ID3", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("F-ID3", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("L-ID4", (uint)(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo("F-ID4", (uint)(checkbox.Checked ? 1 : 0)));
                     break;
             }
 
-            PublishPayloadMetaByBatch(payloadList);
+            PublishPayloadMetaByBatch(hardwareInfoList);
         }
 
         private void PerHWUnitCheckbox_CheckStateChanged(object sender, EventArgs e)
@@ -157,8 +134,8 @@ namespace MqttSim
                 return;
             }
 
-            List<HWPayloadState> payloadList = new List<HWPayloadState>();
-            HWPayloadState payload = new HWPayloadState();
+            List<HardwareInfo> payloadList = new List<HardwareInfo>();
+            HardwareInfo payload = new HardwareInfo();
 
             switch (checkbox.Name)
             {
@@ -199,41 +176,53 @@ namespace MqttSim
                     payload.Id = String.Empty;
                     break;
             }
-            payload.State = Convert.ToUInt32(checkbox.Checked ? 1 : 0);
-            payloadList.Add(payload);
+
+            if (!String.IsNullOrWhiteSpace(payload.Id))
+            {
+                payload.CurrentState = Convert.ToUInt32(checkbox.Checked ? 1 : 0);
+                payloadList.Add(payload);
+            }
 
             PublishPayloadMetaByBatch(payloadList);
         }
 
-        private void PublishPayloadMetaByBatch(List<HWPayloadState> payloadList)
+        private void PublishPayloadMetaByBatch(List<HardwareInfo> hardwareInfoList)
         {
-            PayloadMeta multiplePayloadMeta = new PayloadMeta(payloadList);
-            string multipleJsonPayload = JsonConvert.SerializeObject(multiplePayloadMeta);
+            string jsonifiedHardwareInfoList = JsonConvert.SerializeObject(new HardwareInfoList(hardwareInfoList));
 
-            if (_client.IsConnected)
+            if (m_BrokerConnectJob.Client.IsConnected)
             {
-                _client.Publish("IotWinformSim", Encoding.ASCII.GetBytes(multipleJsonPayload), MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, true);
+                //Publish JSON converted HardwareInfoList to MQTT server
+                m_BrokerConnectJob.Client.Publish(
+                    "IotWinformSim",
+                    Encoding.ASCII.GetBytes(jsonifiedHardwareInfoList),
+                    MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+                    true);
 
-                for (int i = 0; i < payloadList.Count; i++)
+                for (int i = 0; i < hardwareInfoList.Count; i++)
                 {
-                    string jsonPayload = JsonConvert.SerializeObject(payloadList[i]);
-                    AppendRTBText(String.Format("Sending state change command for {0}, cmd = 0x{1:D2}", payloadList[i].Id, payloadList[i].State), Color.Gray);
-                    msgQueue.Enqueue(jsonPayload);
+                    //Queue HardwareInfoList content to display on UI 
+                    m_QMsgContentToDisplayOnUI.Enqueue(hardwareInfoList[i]);
+
+                    AppendRTBText(String.Format(
+                        "Sending state change command for {0}, cmd = 0x{1:D2}", hardwareInfoList[i].Id, hardwareInfoList[i].CurrentState),
+                        Color.Gray);
                 }
             }
         }
 
-        private void _client_MqttMsgPublished(object sender, MqttMsgPublishedEventArgs e)
+        private void OnMqttMessagePublished(object sender, MqttMsgPublishedEventArgs e)
         {
-            if (e.IsPublished == true)
+            if (e.IsPublished)
             {
-                while (msgQueue.Count > 0)
+                while (m_QMsgContentToDisplayOnUI.Count > 0)
                 {
-                    HWPayloadState payload = JsonConvert.DeserializeObject<HWPayloadState>(msgQueue.Dequeue());
+                    //De-queue message content to display on UI 
+                    HardwareInfo hardwareInfo = m_QMsgContentToDisplayOnUI.Dequeue();
 
-                    AppendRTBText(
-                        String.Format("Successfully sending changed state cmd for {0}, cmd = 0x{1:D2}", payload.Id, payload.State),
-                        payload.State == 1 ? Color.Blue : Color.OrangeRed);
+                    AppendRTBText(String.Format(
+                        "Successfully sending changed state cmd for {0}, cmd = 0x{1:D2}", hardwareInfo.Id, hardwareInfo.CurrentState),
+                        hardwareInfo.CurrentState == 1 ? Color.Blue : Color.OrangeRed);
                 }
             }
         }
@@ -259,17 +248,17 @@ namespace MqttSim
 
         private void ControlWindow_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (_client.IsConnected)
+            if (m_BrokerConnectJob.Client.IsConnected)
             {
-                _client.Disconnect();
+                m_BrokerConnectJob.Client.Disconnect();
             }
         }
 
         private void ControlWindow_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (_client.IsConnected)
+            if (m_BrokerConnectJob.Client.IsConnected)
             {
-                _client.Disconnect();
+                m_BrokerConnectJob.Client.Disconnect();
             }
         }
     }

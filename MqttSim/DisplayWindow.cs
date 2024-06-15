@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿//#define USETHREAD
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,19 +14,22 @@ using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 using Timer = System.Windows.Forms.Timer;
 
+
 namespace MqttSim
 {
     public partial class DisplayWindow : Form
     {
-        private MqttClient _client;
-        private SimulatedObjectBase[] simHWInstance = new SimulatedObjectBase[8];
-        private Timer systemTimer;
-        private Queue<s_ReceievedPayload> q_ReceivedPayload = new Queue<s_ReceievedPayload>();
-        private Queue<s_HWInstance> q_HWInstanceState = new Queue<s_HWInstance>();
-        private bool bPowerUpFinish = false;
-        private STATE iLastSwitchStep;
+        //private MqttClient m_MqttClient { get; set; }
+        private SetMqttBrokerConnectJob m_BrokerConnectJob { get; set; }
+        private Timer systemTimer { get; set; }
+        private Queue<PacketInfo> m_QPacketInfoReceived { get; set; }
+        private Queue<SetHardwareStateJob> m_QSetHardwareStateJob { get; set; }
+        private Dictionary<uint, HardwareBase> m_SimHardwareMap { get; set; }
 
-        private STATE _iAutoNextStep;
+        private bool m_bPowerUpFinish { get; set; }
+        private STATE iLastSwitchStep { get; set; }
+
+        private STATE _iAutoNextStep { get; set; }
 
         private STATE iAutoNextStep
         {
@@ -45,16 +49,10 @@ namespace MqttSim
             }
         }
 
-        public struct s_ReceievedPayload
+        private struct PacketInfo
         {
             public string topic;
-            public PayloadMeta content;
-        }
-
-        private struct s_HWInstance
-        {
-            public string id;
-            public uint state;
+            public HardwareInfoList dataList;
         }
 
         private enum STATE
@@ -73,28 +71,41 @@ namespace MqttSim
             PE_SYSTEM_SHUTDOWN,
         }
 
+#if USETHREAD
+        private Thread HardwareMonitorJobThread { get; set; }
+#endif
         public DisplayWindow()
         {
             InitializeComponent();
-
+            m_bPowerUpFinish = false;
             ControlWindow ctrlWindow = new ControlWindow();
             ctrlWindow.Show();
             InitSystemTimer();
+            m_QPacketInfoReceived = new Queue<PacketInfo>();
+            m_QSetHardwareStateJob = new Queue<SetHardwareStateJob>();
+
+#if USETHREAD
+            HardwareMonitorJobThread = new Thread(new ThreadStart(MonitorStateJobChangeThread));
+            if (!HardwareMonitorJobThread.IsAlive)
+            {
+                HardwareMonitorJobThread.Start();
+            }
+#endif
         }
 
         private void DisplayWindow_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (_client.IsConnected)
+            if (m_BrokerConnectJob.Client.IsConnected)
             {
-                _client.Disconnect();
+                m_BrokerConnectJob.Client.Disconnect();
             }
         }
 
         private void DisplayWindow_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (_client.IsConnected)
+            if (m_BrokerConnectJob.Client.IsConnected)
             {
-                _client.Disconnect();
+                m_BrokerConnectJob.Client.Disconnect();
             }
         }
 
@@ -119,22 +130,23 @@ namespace MqttSim
 
         private void SystemTimer_Tick(object sender, EventArgs e)
         {
-            if (!bPowerUpFinish)
+            if (!m_bPowerUpFinish)
             {
-                bPowerUpFinish = PowerUp();
+                m_bPowerUpFinish = PowerUpOperation();
+
             }
             else
             {
-                Run();
+                AutoOperation();
             }
         }
 
-        private void MqttMessageBroadcasted(object sender, MqttMsgPublishEventArgs e)
+        private void OnMqttMessageReceived(object sender, MqttMsgPublishEventArgs e)
         {
-            s_ReceievedPayload payload;
-            payload.topic = e.Topic;
-            payload.content = JsonConvert.DeserializeObject<PayloadMeta>(Encoding.UTF8.GetString(e.Message));
-            q_ReceivedPayload.Enqueue(payload);
+            PacketInfo packetInfoReceived;
+            packetInfoReceived.topic = e.Topic;
+            packetInfoReceived.dataList = JsonConvert.DeserializeObject<HardwareInfoList>(Encoding.UTF8.GetString(e.Message));
+            m_QPacketInfoReceived.Enqueue(packetInfoReceived);
         }
 
         private bool InitSystemTimer()
@@ -148,111 +160,78 @@ namespace MqttSim
             return true;
         }
 
-        private bool PowerUp()
+        private bool PowerUpOperation()
         {
             switch (iAutoNextStep)
             {
                 case STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER:
-                    _client = new MqttClient("broker.emqx.io");
-                    string guid = Convert.ToString(Guid.NewGuid());
+                    m_BrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
+                    bool bEstablished = m_BrokerConnectJob.Run();
+                    //m_MqttClient = new MqttClient("broker.emqx.io");
+                    //string guid = Convert.ToString(Guid.NewGuid());
 
-                    bool bCatchedException = false;
-                    try
-                    {
-                        _client.Connect(guid, "emqx", "public");
-                    }
-                    catch
-                    {
-                        bCatchedException = true;
-                    }
-                    iAutoNextStep = bCatchedException ? STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER : STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT;
+                    //bool bSuccess = true;
+                    //try
+                    //{
+                    //    m_MqttClient.Connect(guid, "emqx", "public");
+                    //    AppendRTBText( String.Format("MQTT broker connection established: {0}", guid), Color.DarkBlue);
+                    //}
+                    //catch
+                    //{
+                    //    bSuccess = false;
+                    //}
+                    iAutoNextStep = !bEstablished ? STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER : STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT;
                     break;
 
                 case STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT:
-                    _client.MqttMsgPublishReceived += MqttMessageBroadcasted;
+                    m_BrokerConnectJob.Client.MqttMsgPublishReceived += OnMqttMessageReceived;
                     iAutoNextStep = STATE.PU_SUBSCRIBE_TOPIC;
                     break;
 
                 case STATE.PU_SUBSCRIBE_TOPIC:
-                    _client.Subscribe(new string[] { "IotWinformSim" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
+                    m_BrokerConnectJob.Client.Subscribe(new string[] { "IotWinformSim" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
                     iAutoNextStep = STATE.PU_INIT_SIM_HARDWARE_INSTANCE;
                     break;
 
                 case STATE.PU_INIT_SIM_HARDWARE_INSTANCE:
-
-                    simHWInstance[0] = new SimulatedObjectBase(panelLamp1, HW_TYPE.LAMP, LOC.Loc1, "L-ID1");
-                    simHWInstance[1] = new SimulatedObjectBase(panelLamp2, HW_TYPE.LAMP, LOC.Loc2, "L-ID2");
-                    simHWInstance[2] = new SimulatedObjectBase(panelLamp3, HW_TYPE.LAMP, LOC.Loc3, "L-ID3");
-                    simHWInstance[3] = new SimulatedObjectBase(panelLamp4, HW_TYPE.LAMP, LOC.Loc4, "L-ID4");
-
-                    simHWInstance[4] = new SimulatedObjectBase(panelFan1, HW_TYPE.FAN, LOC.Loc1, "F-ID1");
-                    simHWInstance[5] = new SimulatedObjectBase(panelFan2, HW_TYPE.FAN, LOC.Loc2, "F-ID2");
-                    simHWInstance[6] = new SimulatedObjectBase(panelFan3, HW_TYPE.FAN, LOC.Loc3, "F-ID3");
-                    simHWInstance[7] = new SimulatedObjectBase(panelFan4, HW_TYPE.FAN, LOC.Loc4, "F-ID4");
-
+                    InitializeHardwareMap();
                     iAutoNextStep = STATE.PU_SET_SIM_HARDWARE_INIT_STATE;
                     break;
 
                 case STATE.PU_SET_SIM_HARDWARE_INIT_STATE:
-                    for (int i = 0; i < simHWInstance.Length; i++)
+                    foreach (KeyValuePair<uint, HardwareBase> kvp in m_SimHardwareMap)
                     {
-                        simHWInstance[i].SetCurrentState(0x0);
+                        kvp.Value.SetCurrentState(0x0);
                     }
                     iAutoNextStep = STATE.PU_COMPLETE;
                     break;
 
                 case STATE.PU_COMPLETE:
-                    bPowerUpFinish = true;
+                    m_bPowerUpFinish = true;
                     iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
             }
-            return bPowerUpFinish;
+            return m_bPowerUpFinish;
         }
 
-        private bool Run()
+        private bool AutoOperation()
         {
             switch (iAutoNextStep)
             {
                 case STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST:
-                    iAutoNextStep = q_ReceivedPayload.Count == 0 ? STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST : STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE;
+                    iAutoNextStep = m_QPacketInfoReceived.Count == 0 ? STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST : STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE;
                     break;
 
                 case STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE:
-                    while (q_ReceivedPayload.Count > 0)
-                    {
-                        s_ReceievedPayload receivedData = q_ReceivedPayload.Dequeue();
-                        if (receivedData.topic == "IotWinformSim")
-                        {
-                            for (int i = 0; i < receivedData.content.hwStateList.Count; i++)
-                            {
-                                s_HWInstance hw;
-                                hw.id = receivedData.content.hwStateList[i].Id;
-                                hw.state = receivedData.content.hwStateList[i].State;
-                                q_HWInstanceState.Enqueue(hw);
-                            }
-                        }
-                    }
-                    iAutoNextStep = q_HWInstanceState.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
+                    TranslatePacketReceived();
+                    iAutoNextStep = m_QSetHardwareStateJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
                 case STATE.AUTO_UPDATE_HARDWARE_STATE:
-                    while (q_HWInstanceState.Count > 0)
-                    {
-                        s_HWInstance hwInstance = q_HWInstanceState.Dequeue();
-
-                        for (int i = 0; i < simHWInstance.Length; i++)
-                        {
-                            if (simHWInstance[i].Id == hwInstance.id &&
-                                simHWInstance[i].GetCurrentState() != hwInstance.state)
-                            {
-                                Color color = hwInstance.state == 1 ? Color.Green : Color.OrangeRed;
-                                AppendRTBText(String.Format("{0} current state change = 0x{1:D2}", hwInstance.id, hwInstance.state), color);
-                                simHWInstance[i].SetCurrentState(hwInstance.state);
-                                //break;
-                            }
-                        }
-                    }
+#if !USETHREAD
+                    MonitorStateJobChangeThread();
+#endif
                     iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
@@ -262,6 +241,93 @@ namespace MqttSim
 
             }
             return true;
+        }
+
+        private bool TranslatePacketReceived()
+        {
+            while (m_QPacketInfoReceived.Count > 0)
+            {
+                PacketInfo packetReceived = m_QPacketInfoReceived.Dequeue();
+                if (packetReceived.topic == "IotWinformSim" /*&& packetReceived.dataList.ListContent != null*/)
+                {
+                    for (int i = 0; i < packetReceived.dataList.ListContent.Count; i++)
+                    {
+                        foreach (KeyValuePair<uint, HardwareBase> kvp in m_SimHardwareMap)
+                        {
+                            if (kvp.Value.Id == packetReceived.dataList.ListContent[i].Id)
+                            {
+                                m_QSetHardwareStateJob.Enqueue(
+                                    new SetHardwareStateJob(
+                                        kvp.Value,
+                                        packetReceived.dataList.ListContent[i].CurrentState)
+                                    );
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private void MonitorStateJobChangeThread()
+        {
+#if USETHREAD
+            while (true)
+            {
+#endif
+            while (m_QSetHardwareStateJob.Count > 0)
+            {
+                SetHardwareStateJob hardwareStateJob = m_QSetHardwareStateJob.Dequeue();
+
+                foreach (KeyValuePair<uint, HardwareBase> kvp in m_SimHardwareMap)
+                {
+                    if (kvp.Value.Id == hardwareStateJob.Hardware.Id &&
+                        kvp.Value.GetCurrentState() != hardwareStateJob.NewState &&
+                        hardwareStateJob != null)
+                    {
+                        Color color = hardwareStateJob.NewState == 1 ? Color.Green : Color.OrangeRed;
+                        AppendRTBText(
+                            String.Format("{0} current state change = 0x{1:D2}",
+                            hardwareStateJob.Hardware.Id, hardwareStateJob.NewState),
+                            color);
+                        hardwareStateJob.Run();
+                    }
+                }
+            }
+#if USETHREAD
+            }
+#endif
+        }
+
+        private void InitializeHardwareMap()
+        {
+            m_SimHardwareMap = new Dictionary<uint, HardwareBase>();
+            Panel[] panel = new Panel[]
+            {
+                panelLamp1,
+                panelLamp2,
+                panelLamp3,
+                panelLamp4,
+
+                panelFan1,
+                panelFan2,
+                panelFan3,
+                panelFan4,
+            };
+
+            for (uint i = 0; i < panel.Length; i++)
+            {
+                string id = i < 4 ? "L-ID{0}" : "F-ID{0}";
+                if (i < 4)
+                {
+                    m_SimHardwareMap.Add(i, new SimpLamp(panel[i], LOC.Loc1 + (int)i, String.Format(id, i + 1)));
+                }
+                else
+                {
+                    m_SimHardwareMap.Add(i, new SimFan(panel[i], LOC.Loc1 + (int)i - 4, String.Format(id, i - 3)));
+                }
+            }
         }
 
     }

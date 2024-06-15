@@ -34,14 +34,6 @@
             this.checkBoxLoc2 = new System.Windows.Forms.CheckBox();
             this.checkBoxLoc4 = new System.Windows.Forms.CheckBox();
             this.checkBoxLoc1 = new System.Windows.Forms.CheckBox();
-            this.checkBoxFan3 = new System.Windows.Forms.CheckBox();
-            this.checkBoxLamp3 = new System.Windows.Forms.CheckBox();
-            this.checkBoxFan4 = new System.Windows.Forms.CheckBox();
-            this.checkBoxLamp4 = new System.Windows.Forms.CheckBox();
-            this.checkBoxFan2 = new System.Windows.Forms.CheckBox();
-            this.checkBoxLamp2 = new System.Windows.Forms.CheckBox();
-            this.checkBoxFan1 = new System.Windows.Forms.CheckBox();
-            this.checkBoxLamp1 = new System.Windows.Forms.CheckBox();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.label6 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
@@ -50,23 +42,31 @@
             this.flowLayoutPanel4 = new System.Windows.Forms.FlowLayoutPanel();
             this.panelLamp4 = new System.Windows.Forms.Panel();
             this.label1 = new System.Windows.Forms.Label();
+            this.checkBoxLamp4 = new System.Windows.Forms.CheckBox();
             this.panelFan4 = new System.Windows.Forms.Panel();
             this.label2 = new System.Windows.Forms.Label();
+            this.checkBoxFan4 = new System.Windows.Forms.CheckBox();
             this.flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
             this.panelLamp3 = new System.Windows.Forms.Panel();
             this.labelLamp3 = new System.Windows.Forms.Label();
+            this.checkBoxLamp3 = new System.Windows.Forms.CheckBox();
             this.panelFan3 = new System.Windows.Forms.Panel();
             this.labelFan3 = new System.Windows.Forms.Label();
+            this.checkBoxFan3 = new System.Windows.Forms.CheckBox();
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
             this.panelLamp2 = new System.Windows.Forms.Panel();
             this.labelLamp2 = new System.Windows.Forms.Label();
+            this.checkBoxLamp2 = new System.Windows.Forms.CheckBox();
             this.panelFan2 = new System.Windows.Forms.Panel();
             this.labelFan2 = new System.Windows.Forms.Label();
+            this.checkBoxFan2 = new System.Windows.Forms.CheckBox();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.panelLamp1 = new System.Windows.Forms.Panel();
+            this.checkBoxLamp1 = new System.Windows.Forms.CheckBox();
             this.labelLamp1 = new System.Windows.Forms.Label();
             this.panelFan1 = new System.Windows.Forms.Panel();
             this.labelFan1 = new System.Windows.Forms.Label();
+            this.checkBoxFan1 = new System.Windows.Forms.CheckBox();
             this.panel4 = new System.Windows.Forms.Panel();
             this.panel5 = new System.Windows.Forms.Panel();
             this.panel3 = new System.Windows.Forms.Panel();
@@ -163,80 +163,6 @@
             this.checkBoxLoc1.UseVisualStyleBackColor = true;
             this.checkBoxLoc1.CheckStateChanged += new System.EventHandler(this.checkBoxLoc_CheckStateChanged);
             // 
-            // checkBoxFan3
-            // 
-            this.checkBoxFan3.AutoSize = true;
-            this.checkBoxFan3.Location = new System.Drawing.Point(87, 8);
-            this.checkBoxFan3.Name = "checkBoxFan3";
-            this.checkBoxFan3.Size = new System.Drawing.Size(15, 14);
-            this.checkBoxFan3.TabIndex = 22;
-            this.checkBoxFan3.UseVisualStyleBackColor = true;
-            // 
-            // checkBoxLamp3
-            // 
-            this.checkBoxLamp3.AutoSize = true;
-            this.checkBoxLamp3.Location = new System.Drawing.Point(87, 8);
-            this.checkBoxLamp3.Name = "checkBoxLamp3";
-            this.checkBoxLamp3.Size = new System.Drawing.Size(15, 14);
-            this.checkBoxLamp3.TabIndex = 21;
-            this.checkBoxLamp3.UseVisualStyleBackColor = true;
-            // 
-            // checkBoxFan4
-            // 
-            this.checkBoxFan4.AutoSize = true;
-            this.checkBoxFan4.Location = new System.Drawing.Point(87, 8);
-            this.checkBoxFan4.Name = "checkBoxFan4";
-            this.checkBoxFan4.Size = new System.Drawing.Size(15, 14);
-            this.checkBoxFan4.TabIndex = 20;
-            this.checkBoxFan4.UseVisualStyleBackColor = true;
-            // 
-            // checkBoxLamp4
-            // 
-            this.checkBoxLamp4.AutoSize = true;
-            this.checkBoxLamp4.Location = new System.Drawing.Point(87, 10);
-            this.checkBoxLamp4.Name = "checkBoxLamp4";
-            this.checkBoxLamp4.Size = new System.Drawing.Size(15, 14);
-            this.checkBoxLamp4.TabIndex = 19;
-            this.checkBoxLamp4.UseVisualStyleBackColor = true;
-            // 
-            // checkBoxFan2
-            // 
-            this.checkBoxFan2.AutoSize = true;
-            this.checkBoxFan2.Location = new System.Drawing.Point(87, 9);
-            this.checkBoxFan2.Name = "checkBoxFan2";
-            this.checkBoxFan2.Size = new System.Drawing.Size(15, 14);
-            this.checkBoxFan2.TabIndex = 18;
-            this.checkBoxFan2.UseVisualStyleBackColor = true;
-            // 
-            // checkBoxLamp2
-            // 
-            this.checkBoxLamp2.AutoSize = true;
-            this.checkBoxLamp2.Location = new System.Drawing.Point(87, 9);
-            this.checkBoxLamp2.Name = "checkBoxLamp2";
-            this.checkBoxLamp2.Size = new System.Drawing.Size(15, 14);
-            this.checkBoxLamp2.TabIndex = 17;
-            this.checkBoxLamp2.UseVisualStyleBackColor = true;
-            // 
-            // checkBoxFan1
-            // 
-            this.checkBoxFan1.AutoSize = true;
-            this.checkBoxFan1.Location = new System.Drawing.Point(87, 8);
-            this.checkBoxFan1.Name = "checkBoxFan1";
-            this.checkBoxFan1.Size = new System.Drawing.Size(15, 14);
-            this.checkBoxFan1.TabIndex = 16;
-            this.checkBoxFan1.UseVisualStyleBackColor = true;
-            // 
-            // checkBoxLamp1
-            // 
-            this.checkBoxLamp1.AutoSize = true;
-            this.checkBoxLamp1.Location = new System.Drawing.Point(85, 7);
-            this.checkBoxLamp1.Name = "checkBoxLamp1";
-            this.checkBoxLamp1.Size = new System.Drawing.Size(15, 14);
-            this.checkBoxLamp1.TabIndex = 15;
-            this.checkBoxLamp1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.checkBoxLamp1.ThreeState = true;
-            this.checkBoxLamp1.UseVisualStyleBackColor = true;
-            // 
             // richTextBox1
             // 
             this.richTextBox1.Location = new System.Drawing.Point(13, 274);
@@ -312,6 +238,15 @@
             this.label1.TabIndex = 6;
             this.label1.Text = "Lamp ID4";
             // 
+            // checkBoxLamp4
+            // 
+            this.checkBoxLamp4.AutoSize = true;
+            this.checkBoxLamp4.Location = new System.Drawing.Point(87, 10);
+            this.checkBoxLamp4.Name = "checkBoxLamp4";
+            this.checkBoxLamp4.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxLamp4.TabIndex = 19;
+            this.checkBoxLamp4.UseVisualStyleBackColor = true;
+            // 
             // panelFan4
             // 
             this.panelFan4.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
@@ -330,6 +265,15 @@
             this.label2.Size = new System.Drawing.Size(45, 13);
             this.label2.TabIndex = 7;
             this.label2.Text = "Fan ID4";
+            // 
+            // checkBoxFan4
+            // 
+            this.checkBoxFan4.AutoSize = true;
+            this.checkBoxFan4.Location = new System.Drawing.Point(87, 8);
+            this.checkBoxFan4.Name = "checkBoxFan4";
+            this.checkBoxFan4.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxFan4.TabIndex = 20;
+            this.checkBoxFan4.UseVisualStyleBackColor = true;
             // 
             // flowLayoutPanel3
             // 
@@ -362,6 +306,15 @@
             this.labelLamp3.TabIndex = 6;
             this.labelLamp3.Text = "Lamp ID3";
             // 
+            // checkBoxLamp3
+            // 
+            this.checkBoxLamp3.AutoSize = true;
+            this.checkBoxLamp3.Location = new System.Drawing.Point(87, 8);
+            this.checkBoxLamp3.Name = "checkBoxLamp3";
+            this.checkBoxLamp3.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxLamp3.TabIndex = 21;
+            this.checkBoxLamp3.UseVisualStyleBackColor = true;
+            // 
             // panelFan3
             // 
             this.panelFan3.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
@@ -380,6 +333,15 @@
             this.labelFan3.Size = new System.Drawing.Size(45, 13);
             this.labelFan3.TabIndex = 7;
             this.labelFan3.Text = "Fan ID3";
+            // 
+            // checkBoxFan3
+            // 
+            this.checkBoxFan3.AutoSize = true;
+            this.checkBoxFan3.Location = new System.Drawing.Point(87, 8);
+            this.checkBoxFan3.Name = "checkBoxFan3";
+            this.checkBoxFan3.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxFan3.TabIndex = 22;
+            this.checkBoxFan3.UseVisualStyleBackColor = true;
             // 
             // flowLayoutPanel2
             // 
@@ -412,6 +374,15 @@
             this.labelLamp2.TabIndex = 6;
             this.labelLamp2.Text = "Lamp ID2";
             // 
+            // checkBoxLamp2
+            // 
+            this.checkBoxLamp2.AutoSize = true;
+            this.checkBoxLamp2.Location = new System.Drawing.Point(87, 9);
+            this.checkBoxLamp2.Name = "checkBoxLamp2";
+            this.checkBoxLamp2.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxLamp2.TabIndex = 17;
+            this.checkBoxLamp2.UseVisualStyleBackColor = true;
+            // 
             // panelFan2
             // 
             this.panelFan2.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
@@ -430,6 +401,15 @@
             this.labelFan2.Size = new System.Drawing.Size(45, 13);
             this.labelFan2.TabIndex = 7;
             this.labelFan2.Text = "Fan ID2";
+            // 
+            // checkBoxFan2
+            // 
+            this.checkBoxFan2.AutoSize = true;
+            this.checkBoxFan2.Location = new System.Drawing.Point(87, 9);
+            this.checkBoxFan2.Name = "checkBoxFan2";
+            this.checkBoxFan2.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxFan2.TabIndex = 18;
+            this.checkBoxFan2.UseVisualStyleBackColor = true;
             // 
             // flowLayoutPanel1
             // 
@@ -452,6 +432,16 @@
             this.panelLamp1.Name = "panelLamp1";
             this.panelLamp1.Size = new System.Drawing.Size(109, 31);
             this.panelLamp1.TabIndex = 5;
+            // 
+            // checkBoxLamp1
+            // 
+            this.checkBoxLamp1.AutoSize = true;
+            this.checkBoxLamp1.Location = new System.Drawing.Point(85, 7);
+            this.checkBoxLamp1.Name = "checkBoxLamp1";
+            this.checkBoxLamp1.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxLamp1.TabIndex = 15;
+            this.checkBoxLamp1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.checkBoxLamp1.UseVisualStyleBackColor = true;
             // 
             // labelLamp1
             // 
@@ -480,6 +470,15 @@
             this.labelFan1.Size = new System.Drawing.Size(45, 13);
             this.labelFan1.TabIndex = 7;
             this.labelFan1.Text = "Fan ID1";
+            // 
+            // checkBoxFan1
+            // 
+            this.checkBoxFan1.AutoSize = true;
+            this.checkBoxFan1.Location = new System.Drawing.Point(87, 8);
+            this.checkBoxFan1.Name = "checkBoxFan1";
+            this.checkBoxFan1.Size = new System.Drawing.Size(15, 14);
+            this.checkBoxFan1.TabIndex = 16;
+            this.checkBoxFan1.UseVisualStyleBackColor = true;
             // 
             // panel4
             // 

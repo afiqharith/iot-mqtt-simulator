@@ -7,17 +7,9 @@ using System.Windows.Forms;
 
 namespace MqttSim
 {
-    internal class Lamp : SimulatedObjectBase
+    internal class SimpLamp : HardwareBase
     {
-        private uint _currentState;
-        private Panel _panel;
-
-        public Lamp(Panel panel, LOC loc, string id)
-        {
-            this.Id = id;
-            this.Type = HW_TYPE.LAMP;
-            this.Loc = loc;
-            this._panel = panel;
-        }
+        public SimpLamp(Panel panel, LOC loc, string id) 
+            : base(panel, HW_TYPE.LAMP, loc, id) { }
     }
 }
