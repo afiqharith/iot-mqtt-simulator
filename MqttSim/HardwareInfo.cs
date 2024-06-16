@@ -6,6 +6,19 @@ using System.Threading.Tasks;
 
 namespace MqttSim
 {
+    public class HardwareInfo
+    {
+        public string Id { get; set; }
+        public uint CurrentState { get; set; }
+
+        public HardwareInfo(string id, uint state)
+        {
+            this.Id = id;
+            this.CurrentState = state;
+        }
+
+        public HardwareInfo() { }
+    }
 
     public class HardwareInfoList
     {
@@ -19,19 +32,9 @@ namespace MqttSim
         public HardwareInfoList() { }
     }
 
-
-    public class HardwareInfo
+    public interface IJob
     {
-        public string Id { get; set; }
-        public uint CurrentState { get; set; }
-
-        public HardwareInfo(string id, uint state)
-        {
-            this.Id = id;
-            this.CurrentState = state;
-        }
-
-        public HardwareInfo() { }
+        void Run();
     }
 
     public class SetHardwareStateJob: IJob
@@ -52,13 +55,10 @@ namespace MqttSim
 
             if(iRet)
             {
-                this.Hardware.SetCurrentState(this.NewState);
+                this.Hardware.CurrentState = this.NewState;
             }
         }
     }
 
-    public interface IJob
-    {
-        void Run();
-    }
+    
 }

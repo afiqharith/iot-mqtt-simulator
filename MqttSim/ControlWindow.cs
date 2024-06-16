@@ -48,12 +48,14 @@ namespace MqttSim
     public partial class ControlWindow : Form
     {
         private SetMqttBrokerConnectJob m_BrokerConnectJob { get; set; }
-        private Queue<HardwareInfo> m_QMsgContentToDisplayOnUI { get; set; }
+
+        //private Dictionary<ushort, HardwareInfo>
+        private Queue<Dictionary<ushort, HardwareInfo>> m_QMsgContentToDisplayOnUI { get; set; }
 
         public ControlWindow()
         {
             InitializeComponent();
-            m_QMsgContentToDisplayOnUI = new Queue<HardwareInfo>();
+            m_QMsgContentToDisplayOnUI = new Queue<Dictionary<ushort, HardwareInfo>>();
 
             CheckBox[] checkbox = new CheckBox[]
             {
@@ -122,7 +124,7 @@ namespace MqttSim
                     break;
             }
 
-            PublishPayloadMetaByBatch(hardwareInfoList);
+            PublishHardwareInfoToBroker(hardwareInfoList);
         }
 
         private void PerHWUnitCheckbox_CheckStateChanged(object sender, EventArgs e)
@@ -183,17 +185,17 @@ namespace MqttSim
                 payloadList.Add(payload);
             }
 
-            PublishPayloadMetaByBatch(payloadList);
+            PublishHardwareInfoToBroker(payloadList);
         }
 
-        private void PublishPayloadMetaByBatch(List<HardwareInfo> hardwareInfoList)
+        private void PublishHardwareInfoToBroker(List<HardwareInfo> hardwareInfoList)
         {
             string jsonifiedHardwareInfoList = JsonConvert.SerializeObject(new HardwareInfoList(hardwareInfoList));
 
             if (m_BrokerConnectJob.Client.IsConnected)
             {
                 //Publish JSON converted HardwareInfoList to MQTT server
-                m_BrokerConnectJob.Client.Publish(
+                ushort msgID = m_BrokerConnectJob.Client.Publish(
                     "IotWinformSim",
                     Encoding.ASCII.GetBytes(jsonifiedHardwareInfoList),
                     MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
@@ -202,10 +204,15 @@ namespace MqttSim
                 for (int i = 0; i < hardwareInfoList.Count; i++)
                 {
                     //Queue HardwareInfoList content to display on UI 
-                    m_QMsgContentToDisplayOnUI.Enqueue(hardwareInfoList[i]);
+                    Dictionary<ushort, HardwareInfo> messageMap = new Dictionary<ushort, HardwareInfo>();
+                    messageMap.Add(msgID, hardwareInfoList[i]);
+                    m_QMsgContentToDisplayOnUI.Enqueue(messageMap);
 
-                    AppendRTBText(String.Format(
-                        "Sending state change command for {0}, cmd = 0x{1:D2}", hardwareInfoList[i].Id, hardwareInfoList[i].CurrentState),
+                    LogInfo(String.Format(
+                        "ID[{0}] HW state change command sent. HWID: {1}, cmd: 0x{2:D2}", 
+                        msgID, 
+                        hardwareInfoList[i].Id, 
+                        hardwareInfoList[i].CurrentState),
                         Color.Gray);
                 }
             }
@@ -217,33 +224,28 @@ namespace MqttSim
             {
                 while (m_QMsgContentToDisplayOnUI.Count > 0)
                 {
-                    //De-queue message content to display on UI 
-                    HardwareInfo hardwareInfo = m_QMsgContentToDisplayOnUI.Dequeue();
+                    //De-queue message content to display on UI
+                    Dictionary<ushort, HardwareInfo> messageMap = m_QMsgContentToDisplayOnUI.Dequeue();
 
-                    AppendRTBText(String.Format(
-                        "Successfully sending changed state cmd for {0}, cmd = 0x{1:D2}", hardwareInfo.Id, hardwareInfo.CurrentState),
-                        hardwareInfo.CurrentState == 1 ? Color.Blue : Color.OrangeRed);
+                    foreach (KeyValuePair<ushort, HardwareInfo> kvp in messageMap)
+                    {
+                        HardwareInfo hardwareInfo = kvp.Value;
+
+                        LogInfo(String.Format(
+                            "ID[{0}] HW state change command published. HWID: {1}, cmd: 0x{2:D2}", 
+                            kvp.Key, 
+                            hardwareInfo.Id, 
+                            hardwareInfo.CurrentState),
+                            hardwareInfo.CurrentState == 1 ? Color.Blue : Color.OrangeRed);
+
+                    }
                 }
             }
         }
 
-        private void AppendRTBText(string text, Color color)
+        private void LogInfo(string text, Color color)
         {
-            if (richTextBox1.InvokeRequired)
-            {
-                Action safeThread = delegate { AppendRTBText(text, color); };
-                richTextBox1.Invoke(safeThread);
-            }
-            else
-            {
-                richTextBox1.SelectionStart = richTextBox1.TextLength;
-                richTextBox1.SelectionLength = 0;
-
-                richTextBox1.SelectionColor = color;
-                richTextBox1.AppendText(DateTime.Now.ToString("HH:mm:ss,fff") + String.Format(" {0}", text) + Environment.NewLine);
-                richTextBox1.SelectionColor = richTextBox1.ForeColor;
-                richTextBox1.ScrollToCaret();
-            }
+            SystemHelper.AppendRTBText(richTextBox1, text, color);
         }
 
         private void ControlWindow_FormClosing(object sender, FormClosingEventArgs e)

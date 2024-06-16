@@ -22,20 +22,29 @@ namespace MqttSim
         Loc4
     }
 
-    public class IHardwareBase
+    public interface IHardware
     {
         string Id { get; set; }
-        bool CurrentState { get; set; }
+        uint CurrentState { get; set; }
 
     }
 
     public class HardwareBase
     {
-        public string Id { get; private set; }
-        public HW_TYPE Type { get; private set; }
-        public LOC Loc { get; private set; }
-        private uint CurrentState { get; set; }
+        public virtual string Id { get; private set; }
+        public virtual HW_TYPE Type { get; private set; }
+        public virtual LOC Loc { get; private set; }
         private Panel pPanel { get;  set; }
+
+        private uint _currentState = 0;
+        public virtual uint CurrentState 
+        {
+            get { return _currentState; } 
+            set
+            {
+                SetCurrentStateProperty(ref _currentState, value);
+            }
+        }
 
         public HardwareBase(Panel panel, HW_TYPE type, LOC loc, string id)
         {
@@ -44,30 +53,32 @@ namespace MqttSim
             this.Loc = loc;
             this.pPanel = panel;
         }
-        public HardwareBase() { }
 
         public virtual bool Connect()
         {
             return true;
         }
 
-        public virtual void SetCurrentState(uint state)
+        private void SetCurrentStateProperty(ref uint state, uint newval)
         {
-            switch (state)
+            switch (newval)
             {
                 case 0x1:
                     this.pPanel.BackColor = Color.Green;
-                    this.CurrentState = state;
+                    //this.CurrentState = state;
+                    state = newval;
                     break;
 
                 case 0x0:
                 default:
                     this.pPanel.BackColor = Color.Red;
-                    this.CurrentState = 0x0;
+                    //this.CurrentState = 0x0;
+                    state = 0x0;
                     break;
             }
         }
 
+#warning Deprecated code in this method.
         public virtual uint GetCurrentState()
         {
             return this.CurrentState;

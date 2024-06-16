@@ -25,27 +25,16 @@ namespace MqttSim
         private Queue<PacketInfo> m_QPacketInfoReceived { get; set; }
         private Queue<SetHardwareStateJob> m_QSetHardwareStateJob { get; set; }
         private Dictionary<uint, HardwareBase> m_SimHardwareMap { get; set; }
-
-        private bool m_bPowerUpFinish { get; set; }
+        private bool bPowerUpFinish { get; set; }
         private STATE iLastSwitchStep { get; set; }
 
-        private STATE _iAutoNextStep { get; set; }
-
+        private STATE _iAutoNextStep = 0;
         private STATE iAutoNextStep
         {
-            get
-            {
-                return _iAutoNextStep;
-            }
-
+            get { return _iAutoNextStep; }
             set
             {
-                if (value != iLastSwitchStep)
-                {
-                    _iAutoNextStep = value;
-                    iLastSwitchStep = value;
-                    AppendRTBText(String.Format("State change = ({0}) {1}", (int)value, value), Color.Gray);
-                }
+                SetNextStepProperty(ref _iAutoNextStep, value);
             }
         }
 
@@ -77,7 +66,7 @@ namespace MqttSim
         public DisplayWindow()
         {
             InitializeComponent();
-            m_bPowerUpFinish = false;
+            bPowerUpFinish = false;
             ControlWindow ctrlWindow = new ControlWindow();
             ctrlWindow.Show();
             InitSystemTimer();
@@ -109,30 +98,16 @@ namespace MqttSim
             }
         }
 
-        private void AppendRTBText(string text, Color color)
+        private void LogInfo(string text, Color color)
         {
-            if (richTextBox1.InvokeRequired)
-            {
-                Action safeThread = delegate { AppendRTBText(text, color); };
-                richTextBox1.Invoke(safeThread);
-            }
-            else
-            {
-                richTextBox1.SelectionStart = richTextBox1.TextLength;
-                richTextBox1.SelectionLength = 0;
-
-                richTextBox1.SelectionColor = color;
-                richTextBox1.AppendText(DateTime.Now.ToString("HH:mm:ss,fff") + String.Format(" {0}", text) + Environment.NewLine);
-                richTextBox1.SelectionColor = richTextBox1.ForeColor;
-                richTextBox1.ScrollToCaret();
-            }
+            SystemHelper.AppendRTBText(richTextBox1, text, color);
         }
 
         private void SystemTimer_Tick(object sender, EventArgs e)
         {
-            if (!m_bPowerUpFinish)
+            if (!bPowerUpFinish)
             {
-                m_bPowerUpFinish = PowerUpOperation();
+                bPowerUpFinish = PowerUpOperation();
 
             }
             else
@@ -147,6 +122,16 @@ namespace MqttSim
             packetInfoReceived.topic = e.Topic;
             packetInfoReceived.dataList = JsonConvert.DeserializeObject<HardwareInfoList>(Encoding.UTF8.GetString(e.Message));
             m_QPacketInfoReceived.Enqueue(packetInfoReceived);
+        }
+
+        private void SetNextStepProperty(ref STATE step, STATE newval)
+        {
+            if (iLastSwitchStep != newval)
+            {
+                LogInfo(String.Format("Seq state change({0}) = ({1}) {2}", (int)step, (int)newval, newval), Color.Gray);
+                step = newval;
+                iLastSwitchStep = newval;
+            }
         }
 
         private bool InitSystemTimer()
@@ -167,19 +152,6 @@ namespace MqttSim
                 case STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER:
                     m_BrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
                     bool bEstablished = m_BrokerConnectJob.Run();
-                    //m_MqttClient = new MqttClient("broker.emqx.io");
-                    //string guid = Convert.ToString(Guid.NewGuid());
-
-                    //bool bSuccess = true;
-                    //try
-                    //{
-                    //    m_MqttClient.Connect(guid, "emqx", "public");
-                    //    AppendRTBText( String.Format("MQTT broker connection established: {0}", guid), Color.DarkBlue);
-                    //}
-                    //catch
-                    //{
-                    //    bSuccess = false;
-                    //}
                     iAutoNextStep = !bEstablished ? STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER : STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT;
                     break;
 
@@ -201,18 +173,19 @@ namespace MqttSim
                 case STATE.PU_SET_SIM_HARDWARE_INIT_STATE:
                     foreach (KeyValuePair<uint, HardwareBase> kvp in m_SimHardwareMap)
                     {
-                        kvp.Value.SetCurrentState(0x0);
+                        //kvp.Value.SetCurrentStateProperty(0x0);
+                        kvp.Value.CurrentState = 0x0;
                     }
                     iAutoNextStep = STATE.PU_COMPLETE;
                     break;
 
                 case STATE.PU_COMPLETE:
-                    m_bPowerUpFinish = true;
+                    bPowerUpFinish = true;
                     iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
             }
-            return m_bPowerUpFinish;
+            return bPowerUpFinish;
         }
 
         private bool AutoOperation()
@@ -261,6 +234,11 @@ namespace MqttSim
                                         kvp.Value,
                                         packetReceived.dataList.ListContent[i].CurrentState)
                                     );
+                                LogInfo(String.Format(
+                                    "HW new state received. HWID: {0}, current state: 0x{1:D2}",
+                                    packetReceived.dataList.ListContent[i].Id,
+                                    packetReceived.dataList.ListContent[i].CurrentState), 
+                                    Color.Blue);
                             }
                         }
                     }
@@ -283,14 +261,15 @@ namespace MqttSim
                 foreach (KeyValuePair<uint, HardwareBase> kvp in m_SimHardwareMap)
                 {
                     if (kvp.Value.Id == hardwareStateJob.Hardware.Id &&
-                        kvp.Value.GetCurrentState() != hardwareStateJob.NewState &&
+                        /*kvp.Value.GetCurrentState()*/ kvp.Value.CurrentState != hardwareStateJob.NewState &&
                         hardwareStateJob != null)
                     {
                         Color color = hardwareStateJob.NewState == 1 ? Color.Green : Color.OrangeRed;
-                        AppendRTBText(
-                            String.Format("{0} current state change = 0x{1:D2}",
-                            hardwareStateJob.Hardware.Id, hardwareStateJob.NewState),
-                            color);
+                        LogInfo(String.Format(
+                                "HW state changed. HWID: {0}, current state: 0x{1:D2}",
+                                hardwareStateJob.Hardware.Id, 
+                                hardwareStateJob.NewState),
+                                color);
                         hardwareStateJob.Run();
                     }
                 }
