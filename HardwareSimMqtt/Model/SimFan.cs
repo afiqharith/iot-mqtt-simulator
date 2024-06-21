@@ -5,11 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace HardwareSimMqtt
+namespace Model
 {
+    using BitMap;
     internal class SimFan: HardwareBase
     {
-        public SimFan(Panel panel, LOC loc, string id) 
-            : base(panel, HW_TYPE.FAN, loc, id) { }
+        public SimFan(Panel panel, eLOC loc, string id, eBitMask mask) 
+            : base(panel, eTYPE.FAN, loc, id, mask) { }
     }
 }

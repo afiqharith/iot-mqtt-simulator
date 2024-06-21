@@ -10,6 +10,8 @@ using Newtonsoft.Json;
 
 namespace HardwareSimMqtt
 {
+    using BitMap;
+    using DataContainer;
     public class SetMqttBrokerConnectJob
     {
         public MqttClient Client { get; set; }
@@ -73,40 +75,40 @@ namespace HardwareSimMqtt
             List<CheckBox> group3CheckboxList = new List<CheckBox>();
             List<CheckBox> group4CheckboxList = new List<CheckBox>();
 
-            int nFanId = 0; 
+            int nFanId = 0;
             int nLampId = 0;
             for (int i = 0; i < checkboxList.Count; i++)
             {
                 checkboxList[i].CheckStateChanged += new EventHandler(CheckboxUnit_CheckStateChanged);
 
-                if(checkboxList[i].Name.ToLower().Contains("fan".ToLower()))
+                if (checkboxList[i].Name.ToLower().Contains("fan".ToLower()))
                 {
                     nFanId++;
-                    string strFanId = String.Format("F-ID{0}", nFanId);
+                    string strFanId = String.Format("F_ID{0}", nFanId);
                     m_CheckBoxIdMap.Add(strFanId, checkboxList[i]);
                 }
 
                 if (checkboxList[i].Name.ToLower().Contains("lamp".ToLower()))
                 {
                     nLampId++;
-                    string strLampId = String.Format("L-ID{0}", nLampId);
+                    string strLampId = String.Format("L_ID{0}", nLampId);
                     m_CheckBoxIdMap.Add(strLampId, checkboxList[i]);
                 }
-                
-                if (checkboxList[i].Name.Contains("1")) 
-                { 
+
+                if (checkboxList[i].Name.Contains("1"))
+                {
                     group1CheckboxList.Add(checkboxList[i]);
                 }
-                else if (checkboxList[i].Name.Contains("2")) 
-                { 
+                else if (checkboxList[i].Name.Contains("2"))
+                {
                     group2CheckboxList.Add(checkboxList[i]);
                 }
-                else if (checkboxList[i].Name.Contains("3")) 
-                { 
+                else if (checkboxList[i].Name.Contains("3"))
+                {
                     group3CheckboxList.Add(checkboxList[i]);
                 }
-                else 
-                { 
+                else
+                {
                     group4CheckboxList.Add(checkboxList[i]);
                 }
             }
@@ -134,7 +136,7 @@ namespace HardwareSimMqtt
 
             List<HardwareInfo> hardwareInfoList = new List<HardwareInfo>();
 
-            if(checkbox.Name != "checkBoxShutdownAll")
+            if (checkbox.Name != "checkBoxShutdownAll")
             {
                 foreach (KeyValuePair<string, List<CheckBox>> kvpLoc in m_CheckBoxLocGroupMap)
                 {
@@ -206,9 +208,9 @@ namespace HardwareSimMqtt
                     m_QMsgContentToDisplayOnUI.Enqueue(messageMap);
 
                     LogInfo(String.Format(
-                        "ID[{0}] HW state change command sent. HWID: {1}, cmd: 0x{2:D2}", 
-                        msgID, 
-                        hardwareInfoList[i].Id, 
+                        "ID[{0}] HW state change command sent. HWID: {1}, cmd: 0x{2:D2}",
+                        msgID,
+                        hardwareInfoList[i].Id,
                         hardwareInfoList[i].CurrentState),
                         Color.Gray);
                 }
@@ -229,9 +231,9 @@ namespace HardwareSimMqtt
                         HardwareInfo hardwareInfo = kvp.Value;
 
                         LogInfo(String.Format(
-                            "ID[{0}] HW state change command published. HWID: {1}, cmd: 0x{2:D2}", 
-                            kvp.Key, 
-                            hardwareInfo.Id, 
+                            "ID[{0}] HW state change command published. HWID: {1}, cmd: 0x{2:D2}",
+                            kvp.Key,
+                            hardwareInfo.Id,
                             hardwareInfo.CurrentState),
                             hardwareInfo.CurrentState == 1 ? Color.Blue : Color.OrangeRed);
 

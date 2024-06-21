@@ -5,11 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace HardwareSimMqtt
+namespace Model
 {
+    using BitMap;
     internal class SimpLamp : HardwareBase
     {
-        public SimpLamp(Panel panel, LOC loc, string id) 
-            : base(panel, HW_TYPE.LAMP, loc, id) { }
+        public SimpLamp(Panel panel, eLOC loc, string id, eBitMask mask) 
+            : base(panel, eTYPE.LAMP, loc, id, mask) { }
     }
 }

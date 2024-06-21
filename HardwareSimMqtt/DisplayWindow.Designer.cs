@@ -58,6 +58,7 @@
             this.panel5 = new System.Windows.Forms.Panel();
             this.panel3 = new System.Windows.Forms.Panel();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.DataGridViewBitSet = new System.Windows.Forms.DataGridView();
             this.panel1.SuspendLayout();
             this.flowLayoutPanel4.SuspendLayout();
             this.panelLamp4.SuspendLayout();
@@ -71,10 +72,12 @@
             this.flowLayoutPanel1.SuspendLayout();
             this.panelLamp1.SuspendLayout();
             this.panelFan1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.DataGridViewBitSet)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.DataGridViewBitSet);
             this.panel1.Controls.Add(this.richTextBox1);
             this.panel1.Controls.Add(this.label6);
             this.panel1.Controls.Add(this.label5);
@@ -91,12 +94,12 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(460, 385);
+            this.panel1.Size = new System.Drawing.Size(460, 419);
             this.panel1.TabIndex = 0;
             // 
             // richTextBox1
             // 
-            this.richTextBox1.Location = new System.Drawing.Point(13, 274);
+            this.richTextBox1.Location = new System.Drawing.Point(13, 313);
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.Size = new System.Drawing.Size(435, 99);
             this.richTextBox1.TabIndex = 14;
@@ -362,11 +365,22 @@
             this.panel2.Size = new System.Drawing.Size(11, 199);
             this.panel2.TabIndex = 0;
             // 
+            // DataGridViewBitSet
+            // 
+            this.DataGridViewBitSet.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.DataGridViewBitSet.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
+            this.DataGridViewBitSet.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.DataGridViewBitSet.Location = new System.Drawing.Point(15, 259);
+            this.DataGridViewBitSet.Name = "DataGridViewBitSet";
+            this.DataGridViewBitSet.RowHeadersVisible = false;
+            this.DataGridViewBitSet.Size = new System.Drawing.Size(433, 48);
+            this.DataGridViewBitSet.TabIndex = 15;
+            // 
             // DisplayWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(460, 385);
+            this.ClientSize = new System.Drawing.Size(460, 419);
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -396,6 +410,7 @@
             this.panelLamp1.PerformLayout();
             this.panelFan1.ResumeLayout(false);
             this.panelFan1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.DataGridViewBitSet)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -432,6 +447,7 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.RichTextBox richTextBox1;
+        private System.Windows.Forms.DataGridView DataGridViewBitSet;
     }
 }
 

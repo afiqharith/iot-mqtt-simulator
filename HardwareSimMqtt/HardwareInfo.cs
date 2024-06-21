@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HardwareSimMqtt
+namespace DataContainer
 {
-    public class HardwareInfo: IHardware
+    using Model;
+    public class HardwareInfo : IHardware
     {
         public string Id { get; set; }
         public uint CurrentState { get; set; }
@@ -22,7 +23,7 @@ namespace HardwareSimMqtt
 
     //Use ONLY when to serializing/deserializing to JSON object
     public class JsonHardwareInfoList
-    {
+    {        
         public List<HardwareInfo> InfoList { get; set; }
 
         public JsonHardwareInfoList(List<HardwareInfo> hardwareInfoList)
@@ -33,12 +34,18 @@ namespace HardwareSimMqtt
         public JsonHardwareInfoList() { }
     }
 
+
+}
+
+namespace QueryJob
+{
+    using Model;
     public interface IJob
     {
         void Run();
     }
 
-    public class SetHardwareStateJob: IJob
+    public class SetHardwareStateJob : IJob
     {
         public uint NewState { get; private set; }
         public HardwareBase Hardware { get; private set; }
@@ -51,15 +58,12 @@ namespace HardwareSimMqtt
 
         public virtual void Run()
         {
-            bool iRet = false;
-            iRet = this.Hardware.Connect();
+            bool bRet = this.Hardware.Connect();
 
-            if(iRet)
+            if (bRet)
             {
                 this.Hardware.CurrentState = this.NewState;
             }
         }
     }
-
-    
 }

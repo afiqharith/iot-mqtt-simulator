@@ -17,6 +17,10 @@ using Timer = System.Windows.Forms.Timer;
 
 namespace HardwareSimMqtt
 {
+    using Model;
+    using QueryJob;
+    using DataContainer;
+    using BitMap;
     public partial class DisplayWindow : Form
     {
         //private MqttClient m_MqttClient { get; set; }
@@ -25,6 +29,8 @@ namespace HardwareSimMqtt
         private Queue<PacketInfo> m_QPacketInfoReceived { get; set; }
         private Queue<SetHardwareStateJob> m_QSetHardwareStateJob { get; set; }
         internal Dictionary<uint, HardwareBase> m_SimHardwareMap { get; set; }
+        private uint m_RealTimeBitSet { get; set; }
+        private DataTable m_BitSetDt { get; set; }
         private bool bPowerUpFinish { get; set; }
         private STATE iLastSwitchStep { get; set; }
 
@@ -71,9 +77,10 @@ namespace HardwareSimMqtt
             bPowerUpFinish = false;
             ControlWindow ctrlWindow = new ControlWindow();
             ctrlWindow.Show();
-            InitSystemTimer();
             m_QPacketInfoReceived = new Queue<PacketInfo>();
             m_QSetHardwareStateJob = new Queue<SetHardwareStateJob>();
+            InitializeBitSetDgv();
+            InitSystemTimer();
 
 #if USETHREAD
             HardwareMonitorJobThread = new Thread(new ThreadStart(MonitorStateJobChangeThread));
@@ -121,8 +128,8 @@ namespace HardwareSimMqtt
         private void OnMqttMessageReceived(object sender, MqttMsgPublishEventArgs e)
         {
             JsonHardwareInfoList hardwareInfoList = JsonConvert.DeserializeObject<JsonHardwareInfoList>(Encoding.UTF8.GetString(e.Message));
-            if(hardwareInfoList.InfoList == null) { return; }
-            
+            if (hardwareInfoList.InfoList == null) { return; }
+
             PacketInfo packetInfoReceived;
             packetInfoReceived.topic = e.Topic;
             packetInfoReceived.hardwareInfoList = hardwareInfoList.InfoList;
@@ -242,7 +249,7 @@ namespace HardwareSimMqtt
                                 LogInfo(String.Format(
                                     "HW new state received. HWID: {0}, current state: 0x{1:D2}",
                                     packetReceived.hardwareInfoList[i].Id,
-                                    packetReceived.hardwareInfoList[i].CurrentState), 
+                                    packetReceived.hardwareInfoList[i].CurrentState),
                                     Color.Blue);
                             }
                         }
@@ -272,10 +279,11 @@ namespace HardwareSimMqtt
                         Color color = hardwareStateJob.NewState == 1 ? Color.Green : Color.OrangeRed;
                         LogInfo(String.Format(
                                 "HW state changed. HWID: {0}, current state: 0x{1:D2}",
-                                hardwareStateJob.Hardware.Id, 
+                                hardwareStateJob.Hardware.Id,
                                 hardwareStateJob.NewState),
                                 color);
                         hardwareStateJob.Run();
+                        UpdateBitSetDgvData(hardwareStateJob.Hardware.BitMask, hardwareStateJob.Hardware.CurrentStateBit);
                     }
                 }
             }
@@ -302,17 +310,65 @@ namespace HardwareSimMqtt
 
             for (uint i = 0; i < panel.Length; i++)
             {
-                string id = i < 4 ? "L-ID{0}" : "F-ID{0}";
+                int mask = 1 << (int)i;
+                string id = i < 4 ? "L_ID{0}" : "F_ID{0}";
                 if (i < 4)
                 {
-                    m_SimHardwareMap.Add(i, new SimpLamp(panel[i], LOC.Loc1 + (int)i, String.Format(id, i + 1)));
+                    m_SimHardwareMap.Add(i, new SimpLamp(panel[i], eLOC.Loc1 + (int)i, String.Format(id, i + 1), (eBitMask)mask));
                 }
                 else
                 {
-                    m_SimHardwareMap.Add(i, new SimFan(panel[i], LOC.Loc1 + (int)i - 4, String.Format(id, i - 3)));
+                    m_SimHardwareMap.Add(i, new SimFan(panel[i], eLOC.Loc1 + (int)i - 4, String.Format(id, i - 3), (eBitMask)mask));
                 }
+
             }
         }
 
+        private void InitializeBitSetDgv()
+        {
+            m_BitSetDt = new DataTable();
+
+            int columnIndex = Enum.GetNames(typeof(eBitMask)).Length;
+
+            for (int iCol = columnIndex - 1; iCol >= 0; iCol--)
+            {
+                m_BitSetDt.Columns.Add(new DataColumn(String.Format("Bit{0}", iCol + 1), typeof(uint)));
+            }
+
+            DataRow dr = m_BitSetDt.NewRow();
+            for (int iCol = columnIndex - 1; iCol >= 0; iCol--)
+            {
+                dr[String.Format("Bit{0}", iCol + 1)] = 0;
+                //m_BitSetDt.Rows[0][String.Format("Bit{0}", iCol + 1)] = 0;
+            }
+            m_BitSetDt.Rows.Add(dr);
+            DataGridViewBitSet.DataSource = m_BitSetDt;
+        }
+
+        private void UpdateBitSetDgvData(uint BitMask, uint BitSet)
+        {
+            for (int iCol = m_BitSetDt.Columns.Count - 1; iCol >= 0; iCol--)
+            {
+                int iResult = 0;
+                int iBitPos = iCol + 1;
+                if ((BitMask & BitSet) != 0 && ((1 << iCol) & BitMask) != 0)
+                {
+                    m_RealTimeBitSet |= BitMask;
+
+                }
+                else if ((BitMask & BitSet) == 0 && ((1 << iCol) & BitMask) == 0)
+                {
+                    m_RealTimeBitSet &= ~BitMask;
+                }
+
+                if ((m_RealTimeBitSet & (1 << iCol)) != 0)
+                {
+                    iResult = 1;
+                }
+                m_BitSetDt.Rows[0][String.Format("Bit{0}", iBitPos)] = iResult;
+            }
+
+            DataGridViewBitSet.DataSource = m_BitSetDt;
+        }
     }
 }
