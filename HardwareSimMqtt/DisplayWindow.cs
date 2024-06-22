@@ -2,15 +2,10 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 using Timer = System.Windows.Forms.Timer;
 
@@ -23,7 +18,6 @@ namespace HardwareSimMqtt
     using BitMap;
     public partial class DisplayWindow : Form
     {
-        //private MqttClient m_MqttClient { get; set; }
         private SetMqttBrokerConnectJob m_BrokerConnectJob { get; set; }
         private Timer systemTimer { get; set; }
         private Queue<PacketInfo> m_QPacketInfoReceived { get; set; }
@@ -48,7 +42,6 @@ namespace HardwareSimMqtt
         private struct PacketInfo
         {
             public string topic;
-            //public JsonHardwareInfoList hardwareInfoList;
             public List<HardwareInfo> hardwareInfoList;
         }
 
@@ -233,7 +226,7 @@ namespace HardwareSimMqtt
             while (m_QPacketInfoReceived.Count > 0)
             {
                 PacketInfo packetReceived = m_QPacketInfoReceived.Dequeue();
-                if (packetReceived.topic == "IotWinformSim" /*&& packetReceived.dataList.ListContent != null*/)
+                if (packetReceived.topic == "IotWinformSim")
                 {
                     for (int i = 0; i < packetReceived.hardwareInfoList.Count; i++)
                     {
@@ -273,7 +266,7 @@ namespace HardwareSimMqtt
                 foreach (KeyValuePair<uint, HardwareBase> kvp in m_SimHardwareMap)
                 {
                     if (kvp.Value.Id == hardwareStateJob.Hardware.Id &&
-                        /*kvp.Value.GetCurrentState()*/ kvp.Value.CurrentState != hardwareStateJob.NewState &&
+                        kvp.Value.CurrentState != hardwareStateJob.NewState &&
                         hardwareStateJob != null)
                     {
                         Color color = hardwareStateJob.NewState == 1 ? Color.Green : Color.OrangeRed;
@@ -332,14 +325,13 @@ namespace HardwareSimMqtt
 
             for (int iCol = columnIndex - 1; iCol >= 0; iCol--)
             {
-                m_BitSetDt.Columns.Add(new DataColumn(String.Format("Bit{0}", iCol + 1), typeof(uint)));
+                m_BitSetDt.Columns.Add(new DataColumn(String.Format("Bit{0}", iCol/* + 1*/), typeof(uint)));
             }
 
             DataRow dr = m_BitSetDt.NewRow();
             for (int iCol = columnIndex - 1; iCol >= 0; iCol--)
             {
-                dr[String.Format("Bit{0}", iCol + 1)] = 0;
-                //m_BitSetDt.Rows[0][String.Format("Bit{0}", iCol + 1)] = 0;
+                dr[String.Format("Bit{0}", iCol/* + 1*/)] = 0;
             }
             m_BitSetDt.Rows.Add(dr);
             DataGridViewBitSet.DataSource = m_BitSetDt;
@@ -365,7 +357,7 @@ namespace HardwareSimMqtt
                 {
                     iResult = 1;
                 }
-                m_BitSetDt.Rows[0][String.Format("Bit{0}", iBitPos)] = iResult;
+                m_BitSetDt.Rows[0][String.Format("Bit{0}", /*iBitPos*/iCol)] = iResult;
             }
 
             DataGridViewBitSet.DataSource = m_BitSetDt;
