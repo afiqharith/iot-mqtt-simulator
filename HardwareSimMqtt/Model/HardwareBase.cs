@@ -140,7 +140,7 @@ namespace Model
 
                 case 0x0000:
                 default:
-                    this.pPanel.BackColor = Color.Red;
+                    this.pPanel.BackColor = Color.Gray;
                     state = 0x0;
                     if ((this.CurrentStateBit &= this.BitMask) != 0)
                     {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
@@ -6,58 +7,44 @@ using System.Windows.Forms;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 using CheckBox = System.Windows.Forms.CheckBox;
-using Newtonsoft.Json;
 
 namespace HardwareSimMqtt
 {
-    using BitMap;
     using DataContainer;
-    public class SetMqttBrokerConnectJob
-    {
-        public MqttClient Client { get; set; }
-        public string BrokerHostName { get; private set; }
-
-        public SetMqttBrokerConnectJob(string brokerHostName)
-        {
-            BrokerHostName = brokerHostName;
-        }
-
-        public virtual bool Run()
-        {
-            Client = new MqttClient(BrokerHostName);
-            string guid = Convert.ToString(Guid.NewGuid());
-            bool bSuccess = true;
-            try
-            {
-                Client.Connect(guid, "emqx", "public");
-            }
-            catch
-            {
-                bSuccess = false;
-            }
-
-            return bSuccess;
-        }
-    }
-
     public partial class ControlWindow : Form
     {
         private SetMqttBrokerConnectJob m_BrokerConnectJob { get; set; }
-
-        //private Dictionary<ushort, HardwareInfo>
         private Queue<Dictionary<ushort, HardwareInfo>> m_QMsgContentToDisplayOnUI { get; set; }
-
-        private Dictionary<string, List<CheckBox>> m_CheckBoxLocGroupMap { get; set; }
+        private Dictionary<CheckBox, List<CheckBox>> m_CheckBoxLocGroupMap { get; set; }
         private Dictionary<string, CheckBox> m_CheckBoxIdMap { get; set; }
 
         public ControlWindow()
         {
             InitializeComponent();
             m_QMsgContentToDisplayOnUI = new Queue<Dictionary<ushort, HardwareInfo>>();
-            m_CheckBoxLocGroupMap = new Dictionary<string, List<CheckBox>>();
+            m_CheckBoxLocGroupMap = new Dictionary<CheckBox, List<CheckBox>>();
             m_CheckBoxIdMap = new Dictionary<string, CheckBox>();
+            InitializeCheckBoxMapping();
 
-            List<CheckBox> checkboxList = new List<CheckBox>()
+            m_BrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
+            bool bEstablished = m_BrokerConnectJob.Run();
+            if (bEstablished)
+            {
+                m_BrokerConnectJob.Client.MqttMsgPublished += OnMqttMessagePublished;
+            }
+        }
+
+        private void InitializeCheckBoxMapping()
+        {
+            List<CheckBox> locGroupCheckboxList = new List<CheckBox>()
+            {
+                checkBoxLoc1,
+                checkBoxLoc2,
+                checkBoxLoc3,
+                checkBoxLoc4
+            };
+
+            List<CheckBox> unitCheckboxList = new List<CheckBox>()
             {
                 checkBoxFan1,
                 checkBoxFan2,
@@ -70,60 +57,57 @@ namespace HardwareSimMqtt
                 checkBoxLamp4
             };
 
-            List<CheckBox> group1CheckboxList = new List<CheckBox>();
-            List<CheckBox> group2CheckboxList = new List<CheckBox>();
-            List<CheckBox> group3CheckboxList = new List<CheckBox>();
-            List<CheckBox> group4CheckboxList = new List<CheckBox>();
+            //Need to work on this to make simpler
+            List<List<CheckBox>> groupCheckboxList = new List<List<CheckBox>>();
+            //Create list based on the number of grouploc
+            for (int i = 0; i < locGroupCheckboxList.Count; i++)
+            {
+                groupCheckboxList.Add(new List<CheckBox>());
+            }
 
             int nFanId = 0;
             int nLampId = 0;
-            for (int i = 0; i < checkboxList.Count; i++)
+            for (int i = 0; i < unitCheckboxList.Count; i++)
             {
-                checkboxList[i].CheckStateChanged += new EventHandler(CheckboxUnit_CheckStateChanged);
+                unitCheckboxList[i].CheckStateChanged += new EventHandler(CheckboxUnit_CheckStateChanged);
 
-                if (checkboxList[i].Name.ToLower().Contains("fan".ToLower()))
+                if (unitCheckboxList[i].Name.ToLower().Contains("fan".ToLower()))
                 {
                     nFanId++;
                     string strFanId = String.Format("F_ID{0}", nFanId);
-                    m_CheckBoxIdMap.Add(strFanId, checkboxList[i]);
+                    m_CheckBoxIdMap.Add(strFanId, unitCheckboxList[i]);
                 }
 
-                if (checkboxList[i].Name.ToLower().Contains("lamp".ToLower()))
+                if (unitCheckboxList[i].Name.ToLower().Contains("lamp".ToLower()))
                 {
                     nLampId++;
                     string strLampId = String.Format("L_ID{0}", nLampId);
-                    m_CheckBoxIdMap.Add(strLampId, checkboxList[i]);
+                    m_CheckBoxIdMap.Add(strLampId, unitCheckboxList[i]);
                 }
 
-                if (checkboxList[i].Name.Contains("1"))
+                //Need to work on this to make simpler
+                if (unitCheckboxList[i].Name.Contains("1"))
                 {
-                    group1CheckboxList.Add(checkboxList[i]);
+                    groupCheckboxList[0].Add(unitCheckboxList[i]);
                 }
-                else if (checkboxList[i].Name.Contains("2"))
+                else if (unitCheckboxList[i].Name.Contains("2"))
                 {
-                    group2CheckboxList.Add(checkboxList[i]);
+                    groupCheckboxList[1].Add(unitCheckboxList[i]);
                 }
-                else if (checkboxList[i].Name.Contains("3"))
+                else if (unitCheckboxList[i].Name.Contains("3"))
                 {
-                    group3CheckboxList.Add(checkboxList[i]);
+                    groupCheckboxList[2].Add(unitCheckboxList[i]);
                 }
                 else
                 {
-                    group4CheckboxList.Add(checkboxList[i]);
+                    groupCheckboxList[3].Add(unitCheckboxList[i]);
                 }
             }
-            m_CheckBoxLocGroupMap.Add("checkBoxLoc1", group1CheckboxList);
-            m_CheckBoxLocGroupMap.Add("checkBoxLoc2", group2CheckboxList);
-            m_CheckBoxLocGroupMap.Add("checkBoxLoc3", group3CheckboxList);
-            m_CheckBoxLocGroupMap.Add("checkBoxLoc4", group4CheckboxList);
 
-            m_BrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
-            bool bEstablished = m_BrokerConnectJob.Run();
-            if (bEstablished)
+            for(int i = 0; i < locGroupCheckboxList.Count; i++)
             {
-                m_BrokerConnectJob.Client.MqttMsgPublished += OnMqttMessagePublished;
+                m_CheckBoxLocGroupMap.Add(locGroupCheckboxList[i], groupCheckboxList[i]);
             }
-
         }
 
         private void CheckboxLoc_CheckStateChanged(object sender, EventArgs e)
@@ -138,9 +122,9 @@ namespace HardwareSimMqtt
 
             if (checkbox.Name != "checkBoxShutdownAll")
             {
-                foreach (KeyValuePair<string, List<CheckBox>> kvpLoc in m_CheckBoxLocGroupMap)
+                foreach (KeyValuePair<CheckBox, List<CheckBox>> kvpLoc in m_CheckBoxLocGroupMap)
                 {
-                    if (checkbox.Name == kvpLoc.Key)
+                    if (checkbox.Name == kvpLoc.Key.Name)
                     {
                         for (int i = 0; i < kvpLoc.Value.Count; i++)
                         {
@@ -148,7 +132,10 @@ namespace HardwareSimMqtt
                             {
                                 if (kvpLoc.Value[i] == kvpId.Value)
                                 {
-                                    hardwareInfoList.Add(new HardwareInfo(kvpId.Key, Convert.ToUInt32(checkbox.Checked ? 1 : 0)));
+                                    kvpId.Value.CheckStateChanged -= new EventHandler(CheckboxUnit_CheckStateChanged);
+                                    kvpId.Value.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
+                                    kvpId.Value.CheckStateChanged += new EventHandler(CheckboxUnit_CheckStateChanged);
+                                    hardwareInfoList.Add(new HardwareInfo(kvpId.Key, Convert.ToUInt32(checkbox.CheckState)));
                                 }
                             }
                         }
@@ -159,7 +146,18 @@ namespace HardwareSimMqtt
             {
                 foreach (KeyValuePair<string, CheckBox> kvpId in m_CheckBoxIdMap)
                 {
-                    hardwareInfoList.Add(new HardwareInfo(kvpId.Key, Convert.ToUInt32(checkbox.Checked ? 1 : 0)));
+                    kvpId.Value.CheckStateChanged -= new EventHandler(CheckboxUnit_CheckStateChanged);                    
+                    kvpId.Value.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
+                    kvpId.Value.CheckStateChanged += new EventHandler(CheckboxUnit_CheckStateChanged);
+                    hardwareInfoList.Add(new HardwareInfo(kvpId.Key, Convert.ToUInt32(checkbox.CheckState)));
+                }
+
+                foreach (KeyValuePair<CheckBox, List<CheckBox>> kvpLoc in m_CheckBoxLocGroupMap)
+                {
+
+                        kvpLoc.Key.CheckStateChanged -= new EventHandler(CheckboxLoc_CheckStateChanged);
+                        kvpLoc.Key.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
+                        kvpLoc.Key.CheckStateChanged += new EventHandler(CheckboxLoc_CheckStateChanged);
                 }
             }
 
@@ -180,7 +178,7 @@ namespace HardwareSimMqtt
             {
                 if (checkbox == kvpId.Value)
                 {
-                    hardwareInfoList.Add(new HardwareInfo(kvpId.Key, Convert.ToUInt32(checkbox.Checked ? 1 : 0)));
+                    hardwareInfoList.Add(new HardwareInfo(kvpId.Key, Convert.ToUInt32(checkbox.CheckState)));
                 }
             }
 
@@ -261,6 +259,34 @@ namespace HardwareSimMqtt
             {
                 m_BrokerConnectJob.Client.Disconnect();
             }
+        }
+    }
+
+    public class SetMqttBrokerConnectJob
+    {
+        public MqttClient Client { get; set; }
+        public string BrokerHostName { get; private set; }
+
+        public SetMqttBrokerConnectJob(string brokerHostName)
+        {
+            BrokerHostName = brokerHostName;
+        }
+
+        public virtual bool Run()
+        {
+            Client = new MqttClient(BrokerHostName);
+            string guid = Convert.ToString(Guid.NewGuid());
+            bool bSuccess = true;
+            try
+            {
+                Client.Connect(guid, "emqx", "public");
+            }
+            catch
+            {
+                bSuccess = false;
+            }
+
+            return bSuccess;
         }
     }
 }

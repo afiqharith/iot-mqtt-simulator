@@ -73,9 +73,9 @@ namespace HardwareSimMqtt
 #endif
         public DisplayWindow()
         {
+            ControlWindow ctrlWindow = new ControlWindow();
             InitializeComponent();
             bPowerUpFinish = false;
-            ControlWindow ctrlWindow = new ControlWindow();
             ctrlWindow.Show();
             m_QPacketInfoReceived = new Queue<PacketInfo>();
             m_QSetHardwareStateJob = new Queue<SetHardwareStateJob>();
