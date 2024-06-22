@@ -65,5 +65,17 @@ namespace QueryJob
                 this.Hardware.CurrentState = this.NewState;
             }
         }
+
+        //public virtual void Run()
+        //{
+        //    bool bRet = this.Hardware.Connect();
+
+        //    if (bRet)
+        //    {
+        //        this.Hardware.CurrentStateBit = this.Hardware.BitMask & this.NewState;
+        //    }
+        //}
+
+
     }
 }
