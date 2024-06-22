@@ -73,8 +73,8 @@ namespace HardwareSimMqtt
 #endif
         public DisplayWindow()
         {
-            ControlWindow ctrlWindow = new ControlWindow();
             InitializeComponent();
+            ControlWindow ctrlWindow = new ControlWindow();
             bPowerUpFinish = false;
             ctrlWindow.Show();
             m_QPacketInfoReceived = new Queue<PacketInfo>();
