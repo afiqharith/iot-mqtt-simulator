@@ -16,15 +16,17 @@ namespace HardwareSimMqtt
     using QueryJob;
     using DataContainer;
     using BitMap;
+    using System.Threading;
+
     public partial class DisplayWindow : Form
     {
-        private SetMqttBrokerConnectJob m_BrokerConnectJob { get; set; }
-        private Timer systemTimer { get; set; }
-        private Queue<PacketInfo> m_QPacketInfoReceived { get; set; }
-        private Queue<SetHardwareStateJob> m_QSetHardwareStateJob { get; set; }
-        internal Dictionary<uint, HardwareBase> m_SimHardwareMap { get; set; }
-        private uint m_RealTimeBitSet { get; set; }
-        private DataTable m_BitSetDt { get; set; }
+        private SetMqttBrokerConnectJob brokerConnectJob { get; set; }
+        private System.Windows.Forms.Timer systemTimer { get; set; }
+        private Queue<PacketInfo> QpacketInfoReceived { get; set; }
+        private Queue<SetHardwareStateJob> QsetHardwareStateJob { get; set; }
+        protected Dictionary<uint, HardwareBase> simHardwareMap { get; set; }
+        private uint realTimeBitSet { get; set; }
+        private DataTable bitSetDataTable { get; set; }
         private bool bPowerUpFinish { get; set; }
         private STATE iLastSwitchStep { get; set; }
 
@@ -38,11 +40,11 @@ namespace HardwareSimMqtt
             }
         }
 
-        //Use when de-packet the byte receive from broker
+        //Use when de-packet the data receive from broker
         private struct PacketInfo
         {
             public string topic;
-            public List<HardwareInfo> hardwareInfoList;
+            public List<BitInfo> bitInfoList;
         }
 
         private enum STATE
@@ -68,10 +70,11 @@ namespace HardwareSimMqtt
         {
             InitializeComponent();
             ControlWindow ctrlWindow = new ControlWindow();
-            bPowerUpFinish = false;
             ctrlWindow.Show();
-            m_QPacketInfoReceived = new Queue<PacketInfo>();
-            m_QSetHardwareStateJob = new Queue<SetHardwareStateJob>();
+
+            bPowerUpFinish = false;
+            QpacketInfoReceived = new Queue<PacketInfo>();
+            QsetHardwareStateJob = new Queue<SetHardwareStateJob>();
             InitializeBitSetDgv();
             InitSystemTimer();
 
@@ -86,17 +89,17 @@ namespace HardwareSimMqtt
 
         private void DisplayWindow_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (m_BrokerConnectJob.Client.IsConnected)
+            if (brokerConnectJob.Client.IsConnected)
             {
-                m_BrokerConnectJob.Client.Disconnect();
+                brokerConnectJob.Client.Disconnect();
             }
         }
 
         private void DisplayWindow_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (m_BrokerConnectJob.Client.IsConnected)
+            if (brokerConnectJob.Client.IsConnected)
             {
-                m_BrokerConnectJob.Client.Disconnect();
+                brokerConnectJob.Client.Disconnect();
             }
         }
 
@@ -120,13 +123,13 @@ namespace HardwareSimMqtt
 
         private void OnMqttMessageReceived(object sender, MqttMsgPublishEventArgs e)
         {
-            JsonHardwareInfoList hardwareInfoList = JsonConvert.DeserializeObject<JsonHardwareInfoList>(Encoding.UTF8.GetString(e.Message));
-            if (hardwareInfoList.InfoList == null) { return; }
+            JsonBitInfoList bitInfoList = JsonConvert.DeserializeObject<JsonBitInfoList>(Encoding.UTF8.GetString(e.Message));
+            if (bitInfoList.InfoList == null) { return; }
 
             PacketInfo packetInfoReceived;
             packetInfoReceived.topic = e.Topic;
-            packetInfoReceived.hardwareInfoList = hardwareInfoList.InfoList;
-            m_QPacketInfoReceived.Enqueue(packetInfoReceived);
+            packetInfoReceived.bitInfoList = bitInfoList.InfoList;
+            QpacketInfoReceived.Enqueue(packetInfoReceived);
         }
 
         private void SetNextStepProperty(ref STATE step, STATE newval)
@@ -141,7 +144,7 @@ namespace HardwareSimMqtt
 
         private bool InitSystemTimer()
         {
-            systemTimer = new Timer();
+            systemTimer = new System.Windows.Forms.Timer();
             systemTimer.Enabled = true;
             systemTimer.Interval = 1;
             systemTimer.Tick += new EventHandler(SystemTimer_Tick);
@@ -155,18 +158,18 @@ namespace HardwareSimMqtt
             switch (iAutoNextStep)
             {
                 case STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER:
-                    m_BrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
-                    bool bEstablished = m_BrokerConnectJob.Run();
+                    brokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
+                    bool bEstablished = brokerConnectJob.Run();
                     iAutoNextStep = !bEstablished ? STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER : STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT;
                     break;
 
                 case STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT:
-                    m_BrokerConnectJob.Client.MqttMsgPublishReceived += OnMqttMessageReceived;
+                    brokerConnectJob.Client.MqttMsgPublishReceived += OnMqttMessageReceived;
                     iAutoNextStep = STATE.PU_SUBSCRIBE_TOPIC;
                     break;
 
                 case STATE.PU_SUBSCRIBE_TOPIC:
-                    m_BrokerConnectJob.Client.Subscribe(new string[] { "IotWinformSim" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
+                    brokerConnectJob.Client.Subscribe(new string[] { "IotWinformSim" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
                     iAutoNextStep = STATE.PU_INIT_SIM_HARDWARE_INSTANCE;
                     break;
 
@@ -176,10 +179,9 @@ namespace HardwareSimMqtt
                     break;
 
                 case STATE.PU_SET_SIM_HARDWARE_INIT_STATE:
-                    foreach (KeyValuePair<uint, HardwareBase> kvp in m_SimHardwareMap)
+                    foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
                     {
-                        //kvp.Value.SetCurrentStateProperty(0x0);
-                        kvp.Value.CurrentState = 0x0;
+                        kvp.Value.CurrentBitState = kvp.Value.BitMask & ~kvp.Value.BitMask;
                     }
                     iAutoNextStep = STATE.PU_COMPLETE;
                     break;
@@ -198,12 +200,12 @@ namespace HardwareSimMqtt
             switch (iAutoNextStep)
             {
                 case STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST:
-                    iAutoNextStep = m_QPacketInfoReceived.Count == 0 ? STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST : STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE;
+                    iAutoNextStep = QpacketInfoReceived.Count == 0 ? STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST : STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE;
                     break;
 
                 case STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE:
                     TranslatePacketReceived();
-                    iAutoNextStep = m_QSetHardwareStateJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
+                    iAutoNextStep = QsetHardwareStateJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
                 case STATE.AUTO_UPDATE_HARDWARE_STATE:
@@ -223,26 +225,27 @@ namespace HardwareSimMqtt
 
         private bool TranslatePacketReceived()
         {
-            while (m_QPacketInfoReceived.Count > 0)
+            while (QpacketInfoReceived.Count > 0)
             {
-                PacketInfo packetReceived = m_QPacketInfoReceived.Dequeue();
+                PacketInfo packetReceived = QpacketInfoReceived.Dequeue();
                 if (packetReceived.topic == "IotWinformSim")
                 {
-                    for (int i = 0; i < packetReceived.hardwareInfoList.Count; i++)
+                    for (int i = 0; i < packetReceived.bitInfoList.Count; i++)
                     {
-                        foreach (KeyValuePair<uint, HardwareBase> kvp in m_SimHardwareMap)
+                        foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
                         {
-                            if (kvp.Value.Id == packetReceived.hardwareInfoList[i].Id)
+                            if (kvp.Value.Id == packetReceived.bitInfoList[i].Id)
                             {
-                                m_QSetHardwareStateJob.Enqueue(
+                                QsetHardwareStateJob.Enqueue(
                                     new SetHardwareStateJob(
                                         kvp.Value,
-                                        packetReceived.hardwareInfoList[i].CurrentState));
+                                        packetReceived.bitInfoList[i].CurrentBitState));
 
                                 LogInfo(String.Format(
-                                    "HW new state received. HWID: {0}, current state: 0x{1:D2}",
-                                    packetReceived.hardwareInfoList[i].Id,
-                                    packetReceived.hardwareInfoList[i].CurrentState),
+                                    "HW new state received. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}",
+                                    packetReceived.bitInfoList[i].Id,
+                                    kvp.Value.BitMask.ToString("X"),
+                                     packetReceived.bitInfoList[i].CurrentBitState.ToString("X")),
                                     Color.Blue);
                             }
                         }
@@ -259,24 +262,27 @@ namespace HardwareSimMqtt
             while (true)
             {
 #endif
-            while (m_QSetHardwareStateJob.Count > 0)
+            while (QsetHardwareStateJob.Count > 0)
             {
-                SetHardwareStateJob hardwareStateJob = m_QSetHardwareStateJob.Dequeue();
+                SetHardwareStateJob hardwareStateJob = QsetHardwareStateJob.Dequeue();
 
-                foreach (KeyValuePair<uint, HardwareBase> kvp in m_SimHardwareMap)
+                foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
                 {
                     if (kvp.Value.Id == hardwareStateJob.Hardware.Id &&
-                        kvp.Value.CurrentState != hardwareStateJob.NewState &&
+                        kvp.Value.CurrentBitState != hardwareStateJob.NewBitState &&
                         hardwareStateJob != null)
                     {
-                        Color color = hardwareStateJob.NewState == 1 ? Color.Green : Color.OrangeRed;
+                        Color color = ((hardwareStateJob.NewBitState & kvp.Value.CurrentBitState) != 0) ? Color.Green : Color.OrangeRed;
+
                         LogInfo(String.Format(
-                                "HW state changed. HWID: {0}, current state: 0x{1:D2}",
+                                "HW state changed. HWID: {0}, mask bit: 0x{1:D4}, state bit change from 0x{2:D4} to 0x{3:D4}",
                                 hardwareStateJob.Hardware.Id,
-                                hardwareStateJob.NewState),
+                                kvp.Value.BitMask.ToString("X"),
+                                kvp.Value.CurrentBitState.ToString("X"),
+                                hardwareStateJob.NewBitState.ToString("X")),
                                 color);
                         hardwareStateJob.Run();
-                        UpdateBitSetDgvData(hardwareStateJob.Hardware.BitMask, hardwareStateJob.Hardware.CurrentStateBit);
+                        UpdateBitSetDgvData(hardwareStateJob.Hardware.BitMask, hardwareStateJob.Hardware.CurrentBitState);
                     }
                 }
             }
@@ -287,80 +293,90 @@ namespace HardwareSimMqtt
 
         private void InitializeHardwareMap()
         {
-            m_SimHardwareMap = new Dictionary<uint, HardwareBase>();
-            Panel[] panel = new Panel[]
+            simHardwareMap = new Dictionary<uint, HardwareBase>();
+            List<Panel> panelList = new List<Panel>()
             {
-                panelLamp1,
-                panelLamp2,
-                panelLamp3,
-                panelLamp4,
-
                 panelFan1,
                 panelFan2,
                 panelFan3,
                 panelFan4,
+
+                panelLamp1,
+                panelLamp2,
+                panelLamp3,
+                panelLamp4,
             };
 
-            for (uint i = 0; i < panel.Length; i++)
+            for (int i = 0; i < panelList.Count; i++)
             {
-                int mask = 1 << (int)i;
-                string id = i < 4 ? "L_ID{0}" : "F_ID{0}";
+                int bitMask = 1 << i;
                 if (i < 4)
                 {
-                    m_SimHardwareMap.Add(i, new SimpLamp(panel[i], eLOC.Loc1 + (int)i, String.Format(id, i + 1), (eBitMask)mask));
+                    simHardwareMap.Add((uint)i, 
+                        new SimFan(
+                            panelList[i], 
+                            eLOC.Loc1 + i, 
+                            Convert.ToString(i + 1), 
+                            (eBitMask)bitMask));
                 }
                 else
                 {
-                    m_SimHardwareMap.Add(i, new SimFan(panel[i], eLOC.Loc1 + (int)i - 4, String.Format(id, i - 3), (eBitMask)mask));
+                    simHardwareMap.Add((uint)i, 
+                        new SimLamp(
+                            panelList[i], 
+                            eLOC.Loc1 + i - 4, 
+                            Convert.ToString(i - 3), 
+                            (eBitMask)bitMask));
                 }
+            }
 
+            //Do connection attempt
+            foreach(KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+            {
+                kvp.Value.Connect();
             }
         }
 
         private void InitializeBitSetDgv()
         {
-            m_BitSetDt = new DataTable();
+            bitSetDataTable = new DataTable();
 
-            int columnIndex = Enum.GetNames(typeof(eBitMask)).Length;
+            int nColCount = Enum.GetNames(typeof(eBitMask)).Length;
 
-            for (int iCol = columnIndex - 1; iCol >= 0; iCol--)
+            for (int nCol = nColCount - 1; nCol >= 0; nCol--)
             {
-                m_BitSetDt.Columns.Add(new DataColumn(String.Format("Bit{0}", iCol/* + 1*/), typeof(uint)));
+                bitSetDataTable.Columns.Add(new DataColumn(String.Format("Bit{0}", nCol), typeof(uint)));
             }
 
-            DataRow dr = m_BitSetDt.NewRow();
-            for (int iCol = columnIndex - 1; iCol >= 0; iCol--)
+            DataRow dr = bitSetDataTable.NewRow();
+            for (int nCol = nColCount - 1; nCol >= 0; nCol--)
             {
-                dr[String.Format("Bit{0}", iCol/* + 1*/)] = 0;
+                dr[String.Format("Bit{0}", nCol)] = 0;
             }
-            m_BitSetDt.Rows.Add(dr);
-            DataGridViewBitSet.DataSource = m_BitSetDt;
+            bitSetDataTable.Rows.Add(dr);
+            DataGridViewBitSet.DataSource = bitSetDataTable;
         }
 
-        private void UpdateBitSetDgvData(uint BitMask, uint BitSet)
+        private void UpdateBitSetDgvData(uint bitMask, uint currentBitState)
         {
-            for (int iCol = m_BitSetDt.Columns.Count - 1; iCol >= 0; iCol--)
+            for (int nCol = bitSetDataTable.Columns.Count - 1; nCol >= 0; nCol--)
             {
-                int iResult = 0;
-                int iBitPos = iCol + 1;
-                if ((BitMask & BitSet) != 0 && ((1 << iCol) & BitMask) != 0)
+                //Update overall system bitSet realtime
+                if ((bitMask & currentBitState) != 0 && ((1 << nCol) & bitMask) != 0)
                 {
-                    m_RealTimeBitSet |= BitMask;
+                    realTimeBitSet |= bitMask;
 
                 }
-                else if ((BitMask & BitSet) == 0 && ((1 << iCol) & BitMask) == 0)
+                else if ((bitMask & currentBitState) == 0 && ((1 << nCol) & bitMask) == 0)
                 {
-                    m_RealTimeBitSet &= ~BitMask;
+                    realTimeBitSet &= ~bitMask;
                 }
 
-                if ((m_RealTimeBitSet & (1 << iCol)) != 0)
-                {
-                    iResult = 1;
-                }
-                m_BitSetDt.Rows[0][String.Format("Bit{0}", /*iBitPos*/iCol)] = iResult;
+                //Update datatable with realtime bitset value
+                int iResult = ((realTimeBitSet & (1 << nCol)) != 0) ? 1 : 0;
+                bitSetDataTable.Rows[0][String.Format("Bit{0}", nCol)] = iResult;
             }
-
-            DataGridViewBitSet.DataSource = m_BitSetDt;
+            DataGridViewBitSet.DataSource = bitSetDataTable;
         }
     }
 }

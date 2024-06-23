@@ -1,40 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace DataContainer
 {
     using Model;
-    public class HardwareInfo : IHardware
+    public class BitInfo : IHardware
     {
         public string Id { get; set; }
-        public uint CurrentState { get; set; }
-
-        public HardwareInfo(string id, uint state)
+        public uint CurrentBitState { get; set; }
+        public BitInfo(string id, uint currentBitState = 0)
         {
             this.Id = id;
-            this.CurrentState = state;
+            this.CurrentBitState = currentBitState;
         }
-
-        public HardwareInfo() { }
     }
 
     //Use ONLY when to serializing/deserializing to JSON object
-    public class JsonHardwareInfoList
+    public class JsonBitInfoList
     {        
-        public List<HardwareInfo> InfoList { get; set; }
+        public List<BitInfo> InfoList { get; set; }
 
-        public JsonHardwareInfoList(List<HardwareInfo> hardwareInfoList)
+        public JsonBitInfoList(List<BitInfo> bitInfoList)
         {
-            this.InfoList = hardwareInfoList;
+            this.InfoList = bitInfoList;
         }
 
-        public JsonHardwareInfoList() { }
+        public JsonBitInfoList() { }
     }
-
-
 }
 
 namespace QueryJob
@@ -47,13 +38,14 @@ namespace QueryJob
 
     public class SetHardwareStateJob : IJob
     {
-        public uint NewState { get; private set; }
         public HardwareBase Hardware { get; private set; }
 
-        public SetHardwareStateJob(HardwareBase hardware, uint newState)
+        public uint NewBitState { get; private set; }
+
+        public SetHardwareStateJob(HardwareBase hardware, uint newBitState = 0)
         {
             this.Hardware = hardware;
-            this.NewState = newState;
+            this.NewBitState = newBitState;
         }
 
         public virtual void Run()
@@ -62,20 +54,8 @@ namespace QueryJob
 
             if (bRet)
             {
-                this.Hardware.CurrentState = this.NewState;
+                this.Hardware.CurrentBitState = this.Hardware.BitMask & this.NewBitState;
             }
         }
-
-        //public virtual void Run()
-        //{
-        //    bool bRet = this.Hardware.Connect();
-
-        //    if (bRet)
-        //    {
-        //        this.Hardware.CurrentStateBit = this.Hardware.BitMask & this.NewState;
-        //    }
-        //}
-
-
     }
 }

@@ -1,46 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
 namespace Model
 {
     using BitMap;
     using System.Drawing;
 
-    internal class SimFan: HardwareBase
+    internal class SimFan : HardwareBase
     {
         private Panel _pPanel = null;
-        private Panel pPanel 
+        private Panel pPanel
         {
-            get { return _pPanel; } 
+            get { return _pPanel; }
             set
             {
                 SetPanelProperty(ref _pPanel, value);
             }
         }
-        public override uint CurrentState
+        public override uint CurrentBitState
         {
             set
             {
-                base.CurrentState = value;
-                switch (value)
-                {
-                    case 0x0001:
-                        this.pPanel.BackColor = Color.Green;
-                        break;
-
-                    case 0x0000:
-                    default:
-                        this.pPanel.BackColor = Color.Gray;
-                        break;
-                }
+                base.CurrentBitState = value;
+                this.pPanel.BackColor = (value & this.BitMask) == this.BitMask ? Color.Green : Color.Gray;
             }
         }
-        public SimFan(Panel panel, eLOC loc, string id, eBitMask mask) 
-            : base(eTYPE.FAN, loc, id, mask) 
+
+        public SimFan(Panel panel, eLOC loc, string nID, eBitMask mask)
+            : base(eTYPE.FAN, loc, nID, mask)
         {
             this.pPanel = panel;
         }

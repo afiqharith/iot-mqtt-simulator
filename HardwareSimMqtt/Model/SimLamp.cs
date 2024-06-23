@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
 namespace Model
 {
     using BitMap;
     using System.Drawing;
 
-    internal class SimpLamp : HardwareBase
+    internal class SimLamp : HardwareBase
     {
         private Panel _pPanel = null;
         private Panel pPanel
@@ -21,26 +16,18 @@ namespace Model
                 SetPanelProperty(ref _pPanel, value);
             }
         }
-        public override uint CurrentState
+
+        public override uint CurrentBitState
         {
             set
             {
-                base.CurrentState = value;
-                switch (value)
-                {
-                    case 0x0001:
-                        this.pPanel.BackColor = Color.Green;
-                        break;
-
-                    case 0x0000:
-                    default:
-                        this.pPanel.BackColor = Color.Gray;
-                        break;
-                }
+                base.CurrentBitState = value;
+                this.pPanel.BackColor = (value & this.BitMask) == this.BitMask ? Color.Green : Color.Gray;
             }
         }
-        public SimpLamp(Panel panel, eLOC loc, string id, eBitMask mask)
-            : base(eTYPE.LAMP, loc, id, mask)
+
+        public SimLamp(Panel panel, eLOC loc, string nID, eBitMask mask)
+            : base(eTYPE.LAMP, loc, nID, mask)
         {
             this.pPanel = panel;
         }

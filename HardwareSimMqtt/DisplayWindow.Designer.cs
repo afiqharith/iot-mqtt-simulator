@@ -28,51 +28,52 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.DataGridViewBitSet = new System.Windows.Forms.DataGridView();
-            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.flowLayoutPanel4 = new System.Windows.Forms.FlowLayoutPanel();
             this.panelLamp4 = new System.Windows.Forms.Panel();
             this.label1 = new System.Windows.Forms.Label();
             this.panelFan4 = new System.Windows.Forms.Panel();
             this.label2 = new System.Windows.Forms.Label();
+            this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
             this.panelLamp3 = new System.Windows.Forms.Panel();
             this.labelLamp3 = new System.Windows.Forms.Label();
             this.panelFan3 = new System.Windows.Forms.Panel();
             this.labelFan3 = new System.Windows.Forms.Label();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
             this.panelLamp2 = new System.Windows.Forms.Panel();
             this.labelLamp2 = new System.Windows.Forms.Label();
             this.panelFan2 = new System.Windows.Forms.Panel();
             this.labelFan2 = new System.Windows.Forms.Label();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.panelLamp1 = new System.Windows.Forms.Panel();
             this.labelLamp1 = new System.Windows.Forms.Label();
             this.panelFan1 = new System.Windows.Forms.Panel();
             this.labelFan1 = new System.Windows.Forms.Label();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.DataGridViewBitSet = new System.Windows.Forms.DataGridView();
+            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.panel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.DataGridViewBitSet)).BeginInit();
+            this.groupBox4.SuspendLayout();
             this.flowLayoutPanel4.SuspendLayout();
             this.panelLamp4.SuspendLayout();
             this.panelFan4.SuspendLayout();
+            this.groupBox3.SuspendLayout();
             this.flowLayoutPanel3.SuspendLayout();
             this.panelLamp3.SuspendLayout();
             this.panelFan3.SuspendLayout();
+            this.groupBox2.SuspendLayout();
             this.flowLayoutPanel2.SuspendLayout();
             this.panelLamp2.SuspendLayout();
             this.panelFan2.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
             this.panelLamp1.SuspendLayout();
             this.panelFan1.SuspendLayout();
-            this.groupBox1.SuspendLayout();
-            this.groupBox2.SuspendLayout();
-            this.groupBox3.SuspendLayout();
-            this.groupBox4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.DataGridViewBitSet)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
@@ -89,24 +90,15 @@
             this.panel1.Size = new System.Drawing.Size(558, 281);
             this.panel1.TabIndex = 0;
             // 
-            // DataGridViewBitSet
+            // groupBox4
             // 
-            this.DataGridViewBitSet.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.DataGridViewBitSet.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
-            this.DataGridViewBitSet.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.DataGridViewBitSet.Location = new System.Drawing.Point(13, 118);
-            this.DataGridViewBitSet.Name = "DataGridViewBitSet";
-            this.DataGridViewBitSet.RowHeadersVisible = false;
-            this.DataGridViewBitSet.Size = new System.Drawing.Size(533, 48);
-            this.DataGridViewBitSet.TabIndex = 15;
-            // 
-            // richTextBox1
-            // 
-            this.richTextBox1.Location = new System.Drawing.Point(13, 172);
-            this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(534, 99);
-            this.richTextBox1.TabIndex = 14;
-            this.richTextBox1.Text = "";
+            this.groupBox4.Controls.Add(this.flowLayoutPanel4);
+            this.groupBox4.Location = new System.Drawing.Point(418, 12);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(129, 100);
+            this.groupBox4.TabIndex = 17;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "Group Loc4";
             // 
             // flowLayoutPanel4
             // 
@@ -156,6 +148,16 @@
             this.label2.TabIndex = 7;
             this.label2.Text = "Fan ID4";
             // 
+            // groupBox3
+            // 
+            this.groupBox3.Controls.Add(this.flowLayoutPanel3);
+            this.groupBox3.Location = new System.Drawing.Point(283, 12);
+            this.groupBox3.Name = "groupBox3";
+            this.groupBox3.Size = new System.Drawing.Size(129, 100);
+            this.groupBox3.TabIndex = 17;
+            this.groupBox3.TabStop = false;
+            this.groupBox3.Text = "Group Loc3";
+            // 
             // flowLayoutPanel3
             // 
             this.flowLayoutPanel3.AutoSize = true;
@@ -203,6 +205,16 @@
             this.labelFan3.Size = new System.Drawing.Size(45, 13);
             this.labelFan3.TabIndex = 7;
             this.labelFan3.Text = "Fan ID3";
+            // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.flowLayoutPanel2);
+            this.groupBox2.Location = new System.Drawing.Point(148, 12);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(129, 100);
+            this.groupBox2.TabIndex = 17;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Group Loc2";
             // 
             // flowLayoutPanel2
             // 
@@ -252,6 +264,16 @@
             this.labelFan2.TabIndex = 7;
             this.labelFan2.Text = "Fan ID2";
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.flowLayoutPanel1);
+            this.groupBox1.Location = new System.Drawing.Point(13, 12);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(129, 100);
+            this.groupBox1.TabIndex = 16;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Group Loc1";
+            // 
             // flowLayoutPanel1
             // 
             this.flowLayoutPanel1.AutoSize = true;
@@ -300,45 +322,33 @@
             this.labelFan1.TabIndex = 7;
             this.labelFan1.Text = "Fan ID1";
             // 
-            // groupBox1
+            // DataGridViewBitSet
             // 
-            this.groupBox1.Controls.Add(this.flowLayoutPanel1);
-            this.groupBox1.Location = new System.Drawing.Point(13, 12);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(129, 100);
-            this.groupBox1.TabIndex = 16;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Group Loc1";
+            this.DataGridViewBitSet.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.DataGridViewBitSet.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
+            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.DataGridViewBitSet.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            this.DataGridViewBitSet.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.DataGridViewBitSet.Enabled = false;
+            this.DataGridViewBitSet.Location = new System.Drawing.Point(13, 118);
+            this.DataGridViewBitSet.Name = "DataGridViewBitSet";
+            this.DataGridViewBitSet.RowHeadersVisible = false;
+            this.DataGridViewBitSet.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.DataGridViewBitSet.Size = new System.Drawing.Size(533, 48);
+            this.DataGridViewBitSet.TabIndex = 15;
             // 
-            // groupBox2
+            // richTextBox1
             // 
-            this.groupBox2.Controls.Add(this.flowLayoutPanel2);
-            this.groupBox2.Location = new System.Drawing.Point(148, 12);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(129, 100);
-            this.groupBox2.TabIndex = 17;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Group Loc2";
-            // 
-            // groupBox3
-            // 
-            this.groupBox3.Controls.Add(this.flowLayoutPanel3);
-            this.groupBox3.Location = new System.Drawing.Point(283, 12);
-            this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(129, 100);
-            this.groupBox3.TabIndex = 17;
-            this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "Group Loc3";
-            // 
-            // groupBox4
-            // 
-            this.groupBox4.Controls.Add(this.flowLayoutPanel4);
-            this.groupBox4.Location = new System.Drawing.Point(418, 12);
-            this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(129, 100);
-            this.groupBox4.TabIndex = 17;
-            this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "Group Loc4";
+            this.richTextBox1.Location = new System.Drawing.Point(13, 172);
+            this.richTextBox1.Name = "richTextBox1";
+            this.richTextBox1.Size = new System.Drawing.Size(534, 99);
+            this.richTextBox1.TabIndex = 14;
+            this.richTextBox1.Text = "";
             // 
             // DisplayWindow
             // 
@@ -349,39 +359,40 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.Name = "DisplayWindow";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Simulation Overview";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.DisplayWindow_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.DisplayWindow_FormClosed);
             this.panel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.DataGridViewBitSet)).EndInit();
+            this.groupBox4.ResumeLayout(false);
+            this.groupBox4.PerformLayout();
             this.flowLayoutPanel4.ResumeLayout(false);
             this.panelLamp4.ResumeLayout(false);
             this.panelLamp4.PerformLayout();
             this.panelFan4.ResumeLayout(false);
             this.panelFan4.PerformLayout();
+            this.groupBox3.ResumeLayout(false);
+            this.groupBox3.PerformLayout();
             this.flowLayoutPanel3.ResumeLayout(false);
             this.panelLamp3.ResumeLayout(false);
             this.panelLamp3.PerformLayout();
             this.panelFan3.ResumeLayout(false);
             this.panelFan3.PerformLayout();
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
             this.flowLayoutPanel2.ResumeLayout(false);
             this.panelLamp2.ResumeLayout(false);
             this.panelLamp2.PerformLayout();
             this.panelFan2.ResumeLayout(false);
             this.panelFan2.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.flowLayoutPanel1.ResumeLayout(false);
             this.panelLamp1.ResumeLayout(false);
             this.panelLamp1.PerformLayout();
             this.panelFan1.ResumeLayout(false);
             this.panelFan1.PerformLayout();
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox2.PerformLayout();
-            this.groupBox3.ResumeLayout(false);
-            this.groupBox3.PerformLayout();
-            this.groupBox4.ResumeLayout(false);
-            this.groupBox4.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.DataGridViewBitSet)).EndInit();
             this.ResumeLayout(false);
 
         }
