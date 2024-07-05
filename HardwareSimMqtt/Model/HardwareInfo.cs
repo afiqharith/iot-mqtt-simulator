@@ -16,7 +16,7 @@ namespace DataContainer
 
     //Use ONLY when to serializing/deserializing to JSON object
     public class JsonBitInfoList
-    {        
+    {
         public List<BitInfo> InfoList { get; set; }
 
         public JsonBitInfoList(List<BitInfo> bitInfoList)
@@ -33,6 +33,7 @@ namespace QueryJob
     using Model;
     public interface IJob
     {
+        HardwareBase Hardware { get; }
         void Run();
     }
 
@@ -55,6 +56,28 @@ namespace QueryJob
             if (bRet)
             {
                 this.Hardware.CurrentBitState = this.Hardware.BitMask & this.NewBitState;
+            }
+        }
+    }
+
+    public class ReadHardwareStateJob : IJob
+    {
+        public HardwareBase Hardware { get; private set; }
+
+        public uint CurrentBitState { get; private set; }
+
+        public ReadHardwareStateJob(HardwareBase hardware)
+        {
+            this.Hardware = hardware;
+        }
+
+        public virtual void Run()
+        {
+            bool bRet = this.Hardware.Connect();
+
+            if (bRet)
+            {
+                this.CurrentBitState = this.Hardware.CurrentBitState;
             }
         }
     }

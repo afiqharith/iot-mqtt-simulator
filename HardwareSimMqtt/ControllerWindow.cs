@@ -12,7 +12,7 @@ namespace HardwareSimMqtt
 {
     using DataContainer;
     using BitMap;
-    public partial class ControlWindow : Form
+    public partial class ControllerWindow : Form
     {
         private class UnitCheckBoxList
         {
@@ -29,7 +29,7 @@ namespace HardwareSimMqtt
         private Dictionary<string, CheckBox> IdCheckBoxMap { get; set; }
         private Dictionary<CheckBox, eBitMask> CheckBoxMaskMap { get; set; }
 
-        public ControlWindow()
+        public ControllerWindow()
         {
             InitializeComponent();
             QMsgContentToDisplayOnUI = new Queue<Dictionary<ushort, BitInfo>>();

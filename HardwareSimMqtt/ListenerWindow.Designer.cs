@@ -1,6 +1,6 @@
 ﻿namespace HardwareSimMqtt
 {
-    partial class DisplayWindow
+    partial class ListenerWindow
     {
         /// <summary>
         /// Required designer variable.
@@ -56,6 +56,7 @@
             this.labelFan1 = new System.Windows.Forms.Label();
             this.DataGridViewBitSet = new System.Windows.Forms.DataGridView();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
+            this.progressBarInfoQ = new System.Windows.Forms.ProgressBar();
             this.panel1.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.flowLayoutPanel4.SuspendLayout();
@@ -78,6 +79,7 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.progressBarInfoQ);
             this.panel1.Controls.Add(this.groupBox4);
             this.panel1.Controls.Add(this.groupBox3);
             this.panel1.Controls.Add(this.groupBox2);
@@ -87,7 +89,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(558, 281);
+            this.panel1.Size = new System.Drawing.Size(558, 311);
             this.panel1.TabIndex = 0;
             // 
             // groupBox4
@@ -324,6 +326,8 @@
             // 
             // DataGridViewBitSet
             // 
+            this.DataGridViewBitSet.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.DataGridViewBitSet.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.DataGridViewBitSet.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
             dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
@@ -344,17 +348,28 @@
             // 
             // richTextBox1
             // 
-            this.richTextBox1.Location = new System.Drawing.Point(13, 172);
+            this.richTextBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.richTextBox1.Location = new System.Drawing.Point(13, 202);
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.Size = new System.Drawing.Size(534, 99);
             this.richTextBox1.TabIndex = 14;
             this.richTextBox1.Text = "";
             // 
+            // progressBarInfoQ
+            // 
+            this.progressBarInfoQ.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.progressBarInfoQ.Location = new System.Drawing.Point(13, 173);
+            this.progressBarInfoQ.Name = "progressBarInfoQ";
+            this.progressBarInfoQ.Size = new System.Drawing.Size(533, 23);
+            this.progressBarInfoQ.TabIndex = 18;
+            // 
             // DisplayWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(558, 281);
+            this.ClientSize = new System.Drawing.Size(558, 311);
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -426,6 +441,7 @@
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.ProgressBar progressBarInfoQ;
     }
 }
 

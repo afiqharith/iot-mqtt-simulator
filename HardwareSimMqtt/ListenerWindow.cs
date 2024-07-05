@@ -18,12 +18,13 @@ namespace HardwareSimMqtt
     using BitMap;
     using System.Threading;
 
-    public partial class DisplayWindow : Form
+    public partial class ListenerWindow : Form
     {
         private SetMqttBrokerConnectJob brokerConnectJob { get; set; }
         private System.Windows.Forms.Timer systemTimer { get; set; }
         private Queue<PacketInfo> QpacketInfoReceived { get; set; }
-        private Queue<SetHardwareStateJob> QsetHardwareStateJob { get; set; }
+        private Queue<IJob> QsetHardwareStateJob { get; set; }
+        private Queue<IJob> QreadHardwareStateJob { get; set; }
         protected Dictionary<uint, HardwareBase> simHardwareMap { get; set; }
         private uint realTimeBitSet { get; set; }
         private DataTable bitSetDataTable { get; set; }
@@ -64,25 +65,36 @@ namespace HardwareSimMqtt
         }
 
 #if USETHREAD
-        private Thread HardwareMonitorJobThread { get; set; }
+        private Thread SetHardwareStateJobChangeThread { get; set; }
+        private Thread ReadHardwareStateJobChangeThread { get; set; }
 #endif
-        public DisplayWindow()
+        public ListenerWindow()
         {
             InitializeComponent();
-            ControlWindow ctrlWindow = new ControlWindow();
+            ControllerWindow ctrlWindow = new ControllerWindow();
             ctrlWindow.Show();
 
             bPowerUpFinish = false;
             QpacketInfoReceived = new Queue<PacketInfo>();
-            QsetHardwareStateJob = new Queue<SetHardwareStateJob>();
+            QsetHardwareStateJob = new Queue<IJob>();
+            QreadHardwareStateJob = new Queue<IJob>();
             InitializeBitSetDgv();
             InitSystemTimer();
+            progressBarInfoQ.Minimum = 1;
+            progressBarInfoQ.Step = 1;
 
 #if USETHREAD
-            HardwareMonitorJobThread = new Thread(new ThreadStart(MonitorStateJobChangeThread));
-            if (!HardwareMonitorJobThread.IsAlive)
+            SetHardwareStateJobChangeThread = new Thread(new ThreadStart(MonitorSetHardwareStateJobChangeThread));
+
+            if (!SetHardwareStateJobChangeThread.IsAlive)
             {
-                HardwareMonitorJobThread.Start();
+                SetHardwareStateJobChangeThread.Start();
+            }
+
+            ReadHardwareStateJobChangeThread = new Thread(new ThreadStart(MonitorReadHardwareStateJobChangeThread));
+            if (!ReadHardwareStateJobChangeThread.IsAlive)
+            {
+                ReadHardwareStateJobChangeThread.Start();
             }
 #endif
         }
@@ -210,8 +222,14 @@ namespace HardwareSimMqtt
 
                 case STATE.AUTO_UPDATE_HARDWARE_STATE:
 #if !USETHREAD
-                    MonitorStateJobChangeThread();
+                    MonitorSetHardwareStateJobChangeThread();
+                    MonitorReadHardwareStateJobChangeThread();
 #endif
+                    if (QreadHardwareStateJob.Count == 0)
+                    {
+                        //Thread.Sleep(1000);
+                        //progressBarInfoQ.Value = 0;
+                    }
                     iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
@@ -256,7 +274,7 @@ namespace HardwareSimMqtt
             return true;
         }
 
-        private void MonitorStateJobChangeThread()
+        private void MonitorSetHardwareStateJobChangeThread()
         {
 #if USETHREAD
             while (true)
@@ -264,25 +282,65 @@ namespace HardwareSimMqtt
 #endif
             while (QsetHardwareStateJob.Count > 0)
             {
-                SetHardwareStateJob hardwareStateJob = QsetHardwareStateJob.Dequeue();
+                SetHardwareStateJob hardwareStateJob = (SetHardwareStateJob)QsetHardwareStateJob.Dequeue();
 
                 foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
                 {
-                    if (kvp.Value.Id == hardwareStateJob.Hardware.Id &&
-                        kvp.Value.CurrentBitState != hardwareStateJob.NewBitState &&
-                        hardwareStateJob != null)
+                    if (hardwareStateJob != null &&
+                        kvp.Value.Id == hardwareStateJob.Hardware.Id &&
+                        kvp.Value.CurrentBitState != hardwareStateJob.NewBitState)
                     {
-                        Color color = ((hardwareStateJob.NewBitState & kvp.Value.CurrentBitState) != 0) ? Color.Green : Color.OrangeRed;
+                        Color color = Color.Orange;
 
                         LogInfo(String.Format(
-                                "HW state changed. HWID: {0}, mask bit: 0x{1:D4}, state bit change from 0x{2:D4} to 0x{3:D4}",
+                                "Set new HW state changed. HWID: {0}, mask bit: 0x{1:D4}, state bit change from 0x{2:D4} to 0x{3:D4}",
                                 hardwareStateJob.Hardware.Id,
                                 kvp.Value.BitMask.ToString("X"),
                                 kvp.Value.CurrentBitState.ToString("X"),
                                 hardwareStateJob.NewBitState.ToString("X")),
                                 color);
                         hardwareStateJob.Run();
+
+                        QreadHardwareStateJob.Enqueue(new ReadHardwareStateJob(kvp.Value));
+
                         UpdateBitSetDgvData(hardwareStateJob.Hardware.BitMask, hardwareStateJob.Hardware.CurrentBitState);
+                    }
+                }
+            }
+            progressBarInfoQ.Maximum = QreadHardwareStateJob.Count;
+
+#if USETHREAD
+            }
+#endif
+        }
+
+        private void MonitorReadHardwareStateJobChangeThread()
+        {
+#if USETHREAD
+            while (true)
+            {
+#endif
+            while (QreadHardwareStateJob.Count > 0)
+            {
+                ReadHardwareStateJob hardwareStateJob = (ReadHardwareStateJob)QreadHardwareStateJob.Dequeue();
+
+                foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+                {
+                    if (hardwareStateJob != null &&
+                        kvp.Value.Id == hardwareStateJob.Hardware.Id
+                        //&& kvp.Value.CurrentBitState == hardwareStateJob.CurrentBitState
+                        )
+                    {
+                        hardwareStateJob.Run();
+                        Color color = ((hardwareStateJob.CurrentBitState & kvp.Value.CurrentBitState) != 0) ? Color.Green : Color.OrangeRed;
+
+                        LogInfo(String.Format(
+                                "Read HW state changed done. HWID: {0}, mask bit: 0x{1:D4}, current state bit 0x{2:D4}",
+                                hardwareStateJob.Hardware.Id,
+                                kvp.Value.BitMask.ToString("X"),
+                                hardwareStateJob.CurrentBitState.ToString("X")),
+                                color);
+                        progressBarInfoQ.PerformStep();
                     }
                 }
             }
@@ -290,6 +348,8 @@ namespace HardwareSimMqtt
             }
 #endif
         }
+
+
 
         private void InitializeHardwareMap()
         {
@@ -312,26 +372,26 @@ namespace HardwareSimMqtt
                 int bitMask = 1 << i;
                 if (i < 4)
                 {
-                    simHardwareMap.Add((uint)i, 
+                    simHardwareMap.Add((uint)i,
                         new SimFan(
-                            panelList[i], 
-                            eLOC.Loc1 + i, 
-                            Convert.ToString(i + 1), 
+                            panelList[i],
+                            eLOC.Loc1 + i,
+                            Convert.ToString(i + 1),
                             (eBitMask)bitMask));
                 }
                 else
                 {
-                    simHardwareMap.Add((uint)i, 
+                    simHardwareMap.Add((uint)i,
                         new SimLamp(
-                            panelList[i], 
-                            eLOC.Loc1 + i - 4, 
-                            Convert.ToString(i - 3), 
+                            panelList[i],
+                            eLOC.Loc1 + i - 4,
+                            Convert.ToString(i - 3),
                             (eBitMask)bitMask));
                 }
             }
 
             //Do connection attempt
-            foreach(KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+            foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
             {
                 kvp.Value.Connect();
             }
@@ -362,12 +422,14 @@ namespace HardwareSimMqtt
             for (int nCol = bitSetDataTable.Columns.Count - 1; nCol >= 0; nCol--)
             {
                 //Update overall system bitSet realtime
-                if ((bitMask & currentBitState) != 0 && ((1 << nCol) & bitMask) != 0)
+                if ((bitMask & currentBitState) != 0 && //Verify if current bit is ON
+                    ((1 << nCol) & bitMask) != 0)       //Verify if bit index is correct
                 {
                     realTimeBitSet |= bitMask;
 
                 }
-                else if ((bitMask & currentBitState) == 0 && ((1 << nCol) & bitMask) == 0)
+                else if ((bitMask & currentBitState) == 0 && //Verify if current bit is OFF
+                    ((1 << nCol) & bitMask) != 0)           //Verify if bit index is correct
                 {
                     realTimeBitSet &= ~bitMask;
                 }

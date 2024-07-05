@@ -56,6 +56,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Messaging" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -67,17 +69,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ControlWindow.cs">
+    <Compile Include="ControllerWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ControlWindow.Designer.cs">
-      <DependentUpon>ControlWindow.cs</DependentUpon>
+    <Compile Include="ControllerWindow.Designer.cs">
+      <DependentUpon>ControllerWindow.cs</DependentUpon>
     </Compile>
-    <Compile Include="DisplayWindow.cs">
+    <Compile Include="ListenerWindow.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="DisplayWindow.Designer.cs">
-      <DependentUpon>DisplayWindow.cs</DependentUpon>
+    <Compile Include="ListenerWindow.Designer.cs">
+      <DependentUpon>ListenerWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="Model\SimLamp.cs" />
     <Compile Include="Model\SimFan.cs" />
@@ -86,11 +88,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Model\HardwareBase.cs" />
     <Compile Include="SystemHelper.cs" />
-    <EmbeddedResource Include="ControlWindow.resx">
-      <DependentUpon>ControlWindow.cs</DependentUpon>
+    <EmbeddedResource Include="ControllerWindow.resx">
+      <DependentUpon>ControllerWindow.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="DisplayWindow.resx">
-      <DependentUpon>DisplayWindow.cs</DependentUpon>
+    <EmbeddedResource Include="ListenerWindow.resx">
+      <DependentUpon>ListenerWindow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

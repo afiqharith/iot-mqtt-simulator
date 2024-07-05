@@ -25,6 +25,16 @@ namespace Model
             }
         }
 
+        private double _speed;
+        public virtual double Speed
+        {
+            get { return _speed; }
+            protected set
+            {
+                SetSpeedProperty(ref _speed, value);
+            }
+        }
+
         public SimFan(Panel panel, eLOC loc, string nID, eBitMask mask)
             : base(eTYPE.FAN, loc, nID, mask)
         {
@@ -34,6 +44,12 @@ namespace Model
         private void SetPanelProperty(ref Panel panel, Panel newval)
         {
             panel = newval;
+        }
+
+
+        private void SetSpeedProperty(ref double speed, double newval)
+        {
+
         }
     }
 }

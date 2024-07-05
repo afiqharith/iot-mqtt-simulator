@@ -16,7 +16,7 @@ namespace HardwareSimMqtt
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new DisplayWindow());
+            Application.Run(new ListenerWindow());
         }
     }
 }

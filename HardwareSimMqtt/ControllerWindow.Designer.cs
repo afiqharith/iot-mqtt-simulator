@@ -1,6 +1,6 @@
 ﻿namespace HardwareSimMqtt
 {
-    partial class ControlWindow
+    partial class ControllerWindow
     {
         /// <summary>
         /// Required designer variable.
@@ -65,7 +65,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(457, 213);
+            this.panel1.Size = new System.Drawing.Size(452, 215);
             this.panel1.TabIndex = 1;
             // 
             // groupBox3
@@ -80,32 +80,32 @@
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Group Loc3";
             // 
-            // checkBoxLoc3
+            // checkBoxLocGroup3
             // 
             this.checkBoxLocGroup3.AutoSize = true;
             this.checkBoxLocGroup3.Location = new System.Drawing.Point(6, 20);
-            this.checkBoxLocGroup3.Name = "checkBoxLoc3";
+            this.checkBoxLocGroup3.Name = "checkBoxLocGroup3";
             this.checkBoxLocGroup3.Size = new System.Drawing.Size(48, 17);
             this.checkBoxLocGroup3.TabIndex = 26;
             this.checkBoxLocGroup3.Text = "Both";
             this.checkBoxLocGroup3.UseVisualStyleBackColor = true;
             this.checkBoxLocGroup3.CheckStateChanged += new System.EventHandler(this.CheckboxLoc_CheckStateChanged);
             // 
-            // checkBoxFan3
+            // checkBoxUnitFan3
             // 
             this.checkBoxUnitFan3.AutoSize = true;
             this.checkBoxUnitFan3.Location = new System.Drawing.Point(6, 66);
-            this.checkBoxUnitFan3.Name = "checkBoxFan3";
+            this.checkBoxUnitFan3.Name = "checkBoxUnitFan3";
             this.checkBoxUnitFan3.Size = new System.Drawing.Size(67, 17);
             this.checkBoxUnitFan3.TabIndex = 22;
             this.checkBoxUnitFan3.Text = "Fan: ID3";
             this.checkBoxUnitFan3.UseVisualStyleBackColor = true;
             // 
-            // checkBoxLamp3
+            // checkBoxUnitLamp3
             // 
             this.checkBoxUnitLamp3.AutoSize = true;
             this.checkBoxUnitLamp3.Location = new System.Drawing.Point(6, 43);
-            this.checkBoxUnitLamp3.Name = "checkBoxLamp3";
+            this.checkBoxUnitLamp3.Name = "checkBoxUnitLamp3";
             this.checkBoxUnitLamp3.Size = new System.Drawing.Size(75, 17);
             this.checkBoxUnitLamp3.TabIndex = 21;
             this.checkBoxUnitLamp3.Text = "Lamp: ID3";
@@ -123,32 +123,32 @@
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Group Loc4";
             // 
-            // checkBoxLoc4
+            // checkBoxLocGroup4
             // 
             this.checkBoxLocGroup4.AutoSize = true;
             this.checkBoxLocGroup4.Location = new System.Drawing.Point(6, 21);
-            this.checkBoxLocGroup4.Name = "checkBoxLoc4";
+            this.checkBoxLocGroup4.Name = "checkBoxLocGroup4";
             this.checkBoxLocGroup4.Size = new System.Drawing.Size(48, 17);
             this.checkBoxLocGroup4.TabIndex = 24;
             this.checkBoxLocGroup4.Text = "Both";
             this.checkBoxLocGroup4.UseVisualStyleBackColor = true;
             this.checkBoxLocGroup4.CheckStateChanged += new System.EventHandler(this.CheckboxLoc_CheckStateChanged);
             // 
-            // checkBoxFan4
+            // checkBoxUnitFan4
             // 
             this.checkBoxUnitFan4.AutoSize = true;
             this.checkBoxUnitFan4.Location = new System.Drawing.Point(6, 67);
-            this.checkBoxUnitFan4.Name = "checkBoxFan4";
+            this.checkBoxUnitFan4.Name = "checkBoxUnitFan4";
             this.checkBoxUnitFan4.Size = new System.Drawing.Size(67, 17);
             this.checkBoxUnitFan4.TabIndex = 20;
             this.checkBoxUnitFan4.Text = "Fan: ID4";
             this.checkBoxUnitFan4.UseVisualStyleBackColor = true;
             // 
-            // checkBoxLamp4
+            // checkBoxUnitLamp4
             // 
             this.checkBoxUnitLamp4.AutoSize = true;
             this.checkBoxUnitLamp4.Location = new System.Drawing.Point(6, 44);
-            this.checkBoxUnitLamp4.Name = "checkBoxLamp4";
+            this.checkBoxUnitLamp4.Name = "checkBoxUnitLamp4";
             this.checkBoxUnitLamp4.Size = new System.Drawing.Size(75, 17);
             this.checkBoxUnitLamp4.TabIndex = 19;
             this.checkBoxUnitLamp4.Text = "Lamp: ID4";
@@ -166,32 +166,32 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Group Loc2";
             // 
-            // checkBoxLoc2
+            // checkBoxLocGroup2
             // 
             this.checkBoxLocGroup2.AutoSize = true;
             this.checkBoxLocGroup2.Location = new System.Drawing.Point(6, 19);
-            this.checkBoxLocGroup2.Name = "checkBoxLoc2";
+            this.checkBoxLocGroup2.Name = "checkBoxLocGroup2";
             this.checkBoxLocGroup2.Size = new System.Drawing.Size(48, 17);
             this.checkBoxLocGroup2.TabIndex = 25;
             this.checkBoxLocGroup2.Text = "Both";
             this.checkBoxLocGroup2.UseVisualStyleBackColor = true;
             this.checkBoxLocGroup2.CheckStateChanged += new System.EventHandler(this.CheckboxLoc_CheckStateChanged);
             // 
-            // checkBoxFan2
+            // checkBoxUnitFan2
             // 
             this.checkBoxUnitFan2.AutoSize = true;
             this.checkBoxUnitFan2.Location = new System.Drawing.Point(6, 65);
-            this.checkBoxUnitFan2.Name = "checkBoxFan2";
+            this.checkBoxUnitFan2.Name = "checkBoxUnitFan2";
             this.checkBoxUnitFan2.Size = new System.Drawing.Size(67, 17);
             this.checkBoxUnitFan2.TabIndex = 18;
             this.checkBoxUnitFan2.Text = "Fan: ID2";
             this.checkBoxUnitFan2.UseVisualStyleBackColor = true;
             // 
-            // checkBoxLamp2
+            // checkBoxUnitLamp2
             // 
             this.checkBoxUnitLamp2.AutoSize = true;
             this.checkBoxUnitLamp2.Location = new System.Drawing.Point(6, 42);
-            this.checkBoxUnitLamp2.Name = "checkBoxLamp2";
+            this.checkBoxUnitLamp2.Name = "checkBoxUnitLamp2";
             this.checkBoxUnitLamp2.Size = new System.Drawing.Size(75, 17);
             this.checkBoxUnitLamp2.TabIndex = 17;
             this.checkBoxUnitLamp2.Text = "Lamp: ID2";
@@ -209,32 +209,32 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Group Loc1";
             // 
-            // checkBoxLamp1
+            // checkBoxUnitLamp1
             // 
             this.checkBoxUnitLamp1.AutoSize = true;
             this.checkBoxUnitLamp1.Location = new System.Drawing.Point(6, 42);
-            this.checkBoxUnitLamp1.Name = "checkBoxLamp1";
+            this.checkBoxUnitLamp1.Name = "checkBoxUnitLamp1";
             this.checkBoxUnitLamp1.Size = new System.Drawing.Size(75, 17);
             this.checkBoxUnitLamp1.TabIndex = 15;
             this.checkBoxUnitLamp1.Text = "Lamp: ID1";
             this.checkBoxUnitLamp1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.checkBoxUnitLamp1.UseVisualStyleBackColor = true;
             // 
-            // checkBoxFan1
+            // checkBoxUnitFan1
             // 
             this.checkBoxUnitFan1.AutoSize = true;
             this.checkBoxUnitFan1.Location = new System.Drawing.Point(6, 65);
-            this.checkBoxUnitFan1.Name = "checkBoxFan1";
+            this.checkBoxUnitFan1.Name = "checkBoxUnitFan1";
             this.checkBoxUnitFan1.Size = new System.Drawing.Size(67, 17);
             this.checkBoxUnitFan1.TabIndex = 16;
             this.checkBoxUnitFan1.Text = "Fan: ID1";
             this.checkBoxUnitFan1.UseVisualStyleBackColor = true;
             // 
-            // checkBoxLoc1
+            // checkBoxLocGroup1
             // 
             this.checkBoxLocGroup1.AutoSize = true;
             this.checkBoxLocGroup1.Location = new System.Drawing.Point(6, 19);
-            this.checkBoxLocGroup1.Name = "checkBoxLoc1";
+            this.checkBoxLocGroup1.Name = "checkBoxLocGroup1";
             this.checkBoxLocGroup1.Size = new System.Drawing.Size(48, 17);
             this.checkBoxLocGroup1.TabIndex = 23;
             this.checkBoxLocGroup1.Text = "Both";
@@ -254,9 +254,11 @@
             // 
             // richTextBox1
             // 
-            this.richTextBox1.Location = new System.Drawing.Point(12, 106);
+            this.richTextBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.richTextBox1.Location = new System.Drawing.Point(12, 108);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(435, 99);
+            this.richTextBox1.Size = new System.Drawing.Size(430, 99);
             this.richTextBox1.TabIndex = 14;
             this.richTextBox1.Text = "";
             this.richTextBox1.WordWrap = false;
@@ -265,7 +267,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(457, 213);
+            this.ClientSize = new System.Drawing.Size(452, 215);
             this.Controls.Add(this.panel1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
