@@ -20,6 +20,7 @@ namespace Model
     using BitMap;
     using System.Diagnostics;
     using System.Threading;
+    using HardwareMap;
 
     public enum eTYPE
     {
@@ -48,7 +49,7 @@ namespace Model
         uint CurrentBitState { get; set; }
     }
 
-    public class HardwareBase : IHardware
+    public class HardwareBase : HHInterface, IHardware
     {
         private string _id;
         public virtual string Id
@@ -89,7 +90,8 @@ namespace Model
             }
         }
 
-        public HardwareBase(eTYPE type, eLOC loc, string nID, eBitMask mask)
+        public HardwareBase(eTYPE type, eLOC loc, string nID, eBitMask mask) :
+            base("COM12", 9600)
         {
             this.Type = type;
             this.Loc = loc;
@@ -118,11 +120,13 @@ namespace Model
         {
             bitMask = newval;
             //Map with hardware bit
+            base.BitMask = bitMask;
         }
 
         private void SetCurrentBitStateProperty(ref uint bitState, uint newval)
         {
             bitState = newval;
+            base.SendPacket(bitState);
         }
 
         public virtual bool Connect()
@@ -135,15 +139,19 @@ namespace Model
                 try
                 {
                     //Create HW bit map connection here
-                    this.IsConnected = true;
-                    elapsedTime = Environment.TickCount - timeStart;
-                    Debug.WriteLine(String.Format("{0} connected. Bit: 0x{1:D4}, Elapsed: {2}ms", this.Id, this.BitMask.ToString("X"), elapsedTime));
+                    this.IsConnected = base.OpenSerialPort();
                 }
                 catch
                 {
-                    iAttempt++;
                     Thread.Sleep(200);
                 }
+                iAttempt++;
+            }
+
+            if (IsConnected)
+            {
+                elapsedTime = Environment.TickCount - timeStart;
+                Debug.WriteLine(String.Format("{0} connected. Bit: 0x{1:D4}, Elapsed: {2}ms", this.Id, this.BitMask.ToString("X"), elapsedTime));
             }
 
             if (iAttempt > 2)

@@ -7,10 +7,13 @@ namespace DataContainer
     {
         public string Id { get; set; }
         public uint CurrentBitState { get; set; }
-        public BitInfo(string id, uint currentBitState = 0)
+        public double AnalogData { get; set; }
+
+        public BitInfo(string id, uint currentBitState = 0, double analogData = -1)
         {
             this.Id = id;
             this.CurrentBitState = currentBitState;
+            this.AnalogData = analogData;
         }
     }
 

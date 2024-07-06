@@ -75,6 +75,7 @@
     <Compile Include="ControllerWindow.Designer.cs">
       <DependentUpon>ControllerWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="InterfaceHardwareHub\InterfaceHardwareHub.cs" />
     <Compile Include="ListenerWindow.cs">
       <SubType>Form</SubType>
     </Compile>
