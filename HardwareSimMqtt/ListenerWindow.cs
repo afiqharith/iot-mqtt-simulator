@@ -18,9 +18,10 @@ namespace HardwareSimMqtt
     using BitMap;
     using System.Threading;
 
+    //Listener
     public partial class ListenerWindow : Form
     {
-        private SetMqttBrokerConnectJob brokerConnectJob { get; set; }
+        private SetMqttBrokerConnectJob listenerBrokerConnectJob { get; set; }
         private System.Windows.Forms.Timer systemTimer { get; set; }
         private Queue<PacketInfo> QpacketInfoReceived { get; set; }
         private Queue<IJob> QsetHardwareStateJob { get; set; }
@@ -71,15 +72,14 @@ namespace HardwareSimMqtt
         public ListenerWindow()
         {
             InitializeComponent();
-            ControllerWindow ctrlWindow = new ControllerWindow();
-            ctrlWindow.Show();
 
+            //Listener
             bPowerUpFinish = false;
             QpacketInfoReceived = new Queue<PacketInfo>();
             QsetHardwareStateJob = new Queue<IJob>();
             QreadHardwareStateJob = new Queue<IJob>();
             InitializeBitSetDgv();
-            InitSystemTimer();
+            InitializeSystemTimer();
             progressBarInfoQ.Minimum = 1;
             progressBarInfoQ.Step = 1;
 
@@ -97,27 +97,43 @@ namespace HardwareSimMqtt
                 ReadHardwareStateJobChangeThread.Start();
             }
 #endif
-        }
 
-        private void DisplayWindow_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (brokerConnectJob.Client.IsConnected)
+            //Controller
+            QMsgContentToDisplayOnUI = new Queue<Dictionary<ushort, BitInfo>>();
+            InitializeCheckBoxMapping();
+
+            controllerBrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
+            bool bEstablished = controllerBrokerConnectJob.Run();
+            if (bEstablished)
             {
-                brokerConnectJob.Client.Disconnect();
+                controllerBrokerConnectJob.Client.MqttMsgPublished += OnMqttMessagePublished;
             }
         }
 
-        private void DisplayWindow_FormClosed(object sender, FormClosedEventArgs e)
+        private void OnFormClosing(object sender, FormClosingEventArgs e)
         {
-            if (brokerConnectJob.Client.IsConnected)
+            if (listenerBrokerConnectJob.Client.IsConnected)
             {
-                brokerConnectJob.Client.Disconnect();
+                listenerBrokerConnectJob.Client.Disconnect();
+            }
+
+            if(controllerBrokerConnectJob.Client.IsConnected)
+            {
+                controllerBrokerConnectJob.Client.Disconnect();
             }
         }
 
-        private void LogInfo(string text, Color color)
+        private void OnFormClosed(object sender, FormClosedEventArgs e)
         {
-            SystemHelper.AppendRTBText(richTextBox1, text, color);
+            if (listenerBrokerConnectJob.Client.IsConnected)
+            {
+                listenerBrokerConnectJob.Client.Disconnect();
+            }
+
+            if (controllerBrokerConnectJob.Client.IsConnected)
+            {
+                controllerBrokerConnectJob.Client.Disconnect();
+            }
         }
 
         private void SystemTimer_Tick(object sender, EventArgs e)
@@ -148,13 +164,18 @@ namespace HardwareSimMqtt
         {
             if (iLastSwitchStep != newval)
             {
-                LogInfo(String.Format("Seq state change({0}) = ({1}) {2}", (int)step, (int)newval, newval), Color.Gray);
+                ListenerLogInfo(String.Format("Seq state change({0}) = ({1}) {2}", (int)step, (int)newval, newval), Color.Gray);
                 step = newval;
                 iLastSwitchStep = newval;
             }
         }
 
-        private bool InitSystemTimer()
+        private void ListenerLogInfo(string text, Color color)
+        {
+            SystemHelper.AppendRTBText(richTextBox1, text, color);
+        }
+
+        private bool InitializeSystemTimer()
         {
             systemTimer = new System.Windows.Forms.Timer();
             systemTimer.Enabled = true;
@@ -165,23 +186,89 @@ namespace HardwareSimMqtt
             return true;
         }
 
+        private void InitializeHardwareMap()
+        {
+            simHardwareMap = new Dictionary<uint, HardwareBase>();
+            List<Panel> panelList = new List<Panel>()
+            {
+                panelFan1,
+                panelFan2,
+                panelFan3,
+                panelFan4,
+
+                panelLamp1,
+                panelLamp2,
+                panelLamp3,
+                panelLamp4,
+            };
+
+            for (int i = 0; i < panelList.Count; i++)
+            {
+                int bitMask = 1 << i;
+                if (i < 4)
+                {
+                    simHardwareMap.Add((uint)i,
+                        new SimFan(
+                            panelList[i],
+                            eLOC.Loc1 + i,
+                            Convert.ToString(i + 1),
+                            (eBitMask)bitMask));
+                }
+                else
+                {
+                    simHardwareMap.Add((uint)i,
+                        new SimLamp(
+                            panelList[i],
+                            eLOC.Loc1 + i - 4,
+                            Convert.ToString(i - 3),
+                            (eBitMask)bitMask));
+                }
+            }
+
+            //Do connection attempt
+            foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+            {
+                kvp.Value.Connect();
+            }
+        }
+
+        private void InitializeBitSetDgv()
+        {
+            bitSetDataTable = new DataTable();
+
+            int nColCount = Enum.GetNames(typeof(eBitMask)).Length;
+
+            for (int nCol = nColCount - 1; nCol >= 0; nCol--)
+            {
+                bitSetDataTable.Columns.Add(new DataColumn(String.Format("Bit{0}", nCol), typeof(uint)));
+            }
+
+            DataRow dr = bitSetDataTable.NewRow();
+            for (int nCol = nColCount - 1; nCol >= 0; nCol--)
+            {
+                dr[String.Format("Bit{0}", nCol)] = 0;
+            }
+            bitSetDataTable.Rows.Add(dr);
+            DataGridViewBitSet.DataSource = bitSetDataTable;
+        }
+
         private bool PowerUpOperation()
         {
             switch (iAutoNextStep)
             {
                 case STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER:
-                    brokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
-                    bool bEstablished = brokerConnectJob.Run();
+                    listenerBrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
+                    bool bEstablished = listenerBrokerConnectJob.Run();
                     iAutoNextStep = !bEstablished ? STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER : STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT;
                     break;
 
                 case STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT:
-                    brokerConnectJob.Client.MqttMsgPublishReceived += OnMqttMessageReceived;
+                    listenerBrokerConnectJob.Client.MqttMsgPublishReceived += OnMqttMessageReceived;
                     iAutoNextStep = STATE.PU_SUBSCRIBE_TOPIC;
                     break;
 
                 case STATE.PU_SUBSCRIBE_TOPIC:
-                    brokerConnectJob.Client.Subscribe(new string[] { "IotWinformSim" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
+                    listenerBrokerConnectJob.Client.Subscribe(new string[] { "IotWinformSim" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
                     iAutoNextStep = STATE.PU_INIT_SIM_HARDWARE_INSTANCE;
                     break;
 
@@ -259,7 +346,7 @@ namespace HardwareSimMqtt
                                         kvp.Value,
                                         packetReceived.bitInfoList[i].CurrentBitState));
 
-                                LogInfo(String.Format(
+                                ListenerLogInfo(String.Format(
                                     "HW new state received. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}",
                                     packetReceived.bitInfoList[i].Id,
                                     kvp.Value.BitMask.ToString("X"),
@@ -292,7 +379,7 @@ namespace HardwareSimMqtt
                     {
                         Color color = Color.Orange;
 
-                        LogInfo(String.Format(
+                        ListenerLogInfo(String.Format(
                                 "Set new HW state changed. HWID: {0}, mask bit: 0x{1:D4}, state bit change from 0x{2:D4} to 0x{3:D4}",
                                 hardwareStateJob.Hardware.Id,
                                 kvp.Value.BitMask.ToString("X"),
@@ -334,7 +421,7 @@ namespace HardwareSimMqtt
                         hardwareStateJob.Run();
                         Color color = ((hardwareStateJob.CurrentBitState & kvp.Value.CurrentBitState) != 0) ? Color.Green : Color.OrangeRed;
 
-                        LogInfo(String.Format(
+                        ListenerLogInfo(String.Format(
                                 "Read HW state changed done. HWID: {0}, mask bit: 0x{1:D4}, current state bit 0x{2:D4}",
                                 hardwareStateJob.Hardware.Id,
                                 kvp.Value.BitMask.ToString("X"),
@@ -347,75 +434,7 @@ namespace HardwareSimMqtt
 #if USETHREAD
             }
 #endif
-        }
-
-
-
-        private void InitializeHardwareMap()
-        {
-            simHardwareMap = new Dictionary<uint, HardwareBase>();
-            List<Panel> panelList = new List<Panel>()
-            {
-                panelFan1,
-                panelFan2,
-                panelFan3,
-                panelFan4,
-
-                panelLamp1,
-                panelLamp2,
-                panelLamp3,
-                panelLamp4,
-            };
-
-            for (int i = 0; i < panelList.Count; i++)
-            {
-                int bitMask = 1 << i;
-                if (i < 4)
-                {
-                    simHardwareMap.Add((uint)i,
-                        new SimFan(
-                            panelList[i],
-                            eLOC.Loc1 + i,
-                            Convert.ToString(i + 1),
-                            (eBitMask)bitMask));
-                }
-                else
-                {
-                    simHardwareMap.Add((uint)i,
-                        new SimLamp(
-                            panelList[i],
-                            eLOC.Loc1 + i - 4,
-                            Convert.ToString(i - 3),
-                            (eBitMask)bitMask));
-                }
-            }
-
-            //Do connection attempt
-            foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
-            {
-                kvp.Value.Connect();
-            }
-        }
-
-        private void InitializeBitSetDgv()
-        {
-            bitSetDataTable = new DataTable();
-
-            int nColCount = Enum.GetNames(typeof(eBitMask)).Length;
-
-            for (int nCol = nColCount - 1; nCol >= 0; nCol--)
-            {
-                bitSetDataTable.Columns.Add(new DataColumn(String.Format("Bit{0}", nCol), typeof(uint)));
-            }
-
-            DataRow dr = bitSetDataTable.NewRow();
-            for (int nCol = nColCount - 1; nCol >= 0; nCol--)
-            {
-                dr[String.Format("Bit{0}", nCol)] = 0;
-            }
-            bitSetDataTable.Rows.Add(dr);
-            DataGridViewBitSet.DataSource = bitSetDataTable;
-        }
+        }        
 
         private void UpdateBitSetDgvData(uint bitMask, uint currentBitState)
         {
@@ -441,4 +460,6 @@ namespace HardwareSimMqtt
             DataGridViewBitSet.DataSource = bitSetDataTable;
         }
     }
+
+
 }

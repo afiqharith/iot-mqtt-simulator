@@ -1,18 +1,20 @@
-﻿using Newtonsoft.Json;
+﻿using BitMap;
+using DataContainer;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
-using CheckBox = System.Windows.Forms.CheckBox;
 
 namespace HardwareSimMqtt
 {
-    using DataContainer;
-    using BitMap;
-    public partial class ControllerWindow : Form
+    //Controller
+    public partial class ListenerWindow
     {
         private class UnitCheckBoxList
         {
@@ -23,25 +25,11 @@ namespace HardwareSimMqtt
                 this.Data = new List<CheckBox>();
             }
         }
-        private SetMqttBrokerConnectJob BrokerConnectJob { get; set; }
+        private SetMqttBrokerConnectJob controllerBrokerConnectJob { get; set; }
         private Queue<Dictionary<ushort, BitInfo>> QMsgContentToDisplayOnUI { get; set; }
         private Dictionary<CheckBox, UnitCheckBoxList> LocGroupCheckBoxListUnitCBMap { get; set; }
         private Dictionary<string, CheckBox> IdCheckBoxMap { get; set; }
         private Dictionary<CheckBox, eBitMask> CheckBoxMaskMap { get; set; }
-
-        public ControllerWindow()
-        {
-            InitializeComponent();
-            QMsgContentToDisplayOnUI = new Queue<Dictionary<ushort, BitInfo>>();
-            InitializeCheckBoxMapping();
-
-            BrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
-            bool bEstablished = BrokerConnectJob.Run();
-            if (bEstablished)
-            {
-                BrokerConnectJob.Client.MqttMsgPublished += OnMqttMessagePublished;
-            }
-        }
 
         private void InitializeCheckBoxMapping()
         {
@@ -68,7 +56,9 @@ namespace HardwareSimMqtt
                 checkBoxLocGroup1,
                 checkBoxLocGroup2,
                 checkBoxLocGroup3,
-                checkBoxLocGroup4
+                checkBoxLocGroup4,
+                checkBoxShutdownAll
+
             };
 
             //Need to work on this to make simpler
@@ -78,8 +68,14 @@ namespace HardwareSimMqtt
             //So each check box group contain list of unit check box
             for (int i = 0; i < checkBoxLocGroupList.Count; i++)
             {
+                checkBoxLocGroupList[i].CheckStateChanged += new EventHandler(CheckboxLoc_CheckStateChanged);
+                if(checkBoxLocGroupList[i] == checkBoxShutdownAll)
+                {
+                    continue;
+                }
                 groupedUnitCheckBoxList.Add(new UnitCheckBoxList());
             }
+
 
             int nFanId = 0;
             int nLampId = 0;
@@ -129,6 +125,10 @@ namespace HardwareSimMqtt
 
             for (int i = 0; i < checkBoxLocGroupList.Count; i++)
             {
+                if (checkBoxLocGroupList[i] == checkBoxShutdownAll)
+                {
+                    continue;
+                }
                 LocGroupCheckBoxListUnitCBMap.Add(checkBoxLocGroupList[i], groupedUnitCheckBoxList[i]);
             }
         }
@@ -217,10 +217,10 @@ namespace HardwareSimMqtt
         {
             string jsonifiedBitInfoList = JsonConvert.SerializeObject(new JsonBitInfoList(bitInfoList));
 
-            if (BrokerConnectJob.Client.IsConnected)
+            if (controllerBrokerConnectJob.Client.IsConnected)
             {
                 //Publish JSON converted HardwareInfoList to MQTT server
-                ushort msgID = BrokerConnectJob.Client.Publish(
+                ushort msgID = controllerBrokerConnectJob.Client.Publish(
                     "IotWinformSim",
                     Encoding.UTF8.GetBytes(jsonifiedBitInfoList),
                     MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
@@ -233,7 +233,7 @@ namespace HardwareSimMqtt
                     messageMap.Add(msgID, bitInfoList[i]);
                     QMsgContentToDisplayOnUI.Enqueue(messageMap);
 
-                    LogInfo(String.Format(
+                    ContollerLogInfo(String.Format(
                         "ID[{0}] HW state change command sent. HWID: {1}, cmd bit: 0x{2:D4}",
                         msgID,
                         bitInfoList[i].Id,
@@ -256,7 +256,7 @@ namespace HardwareSimMqtt
                     {
                         BitInfo bitInfo = kvp.Value;
 
-                        LogInfo(String.Format(
+                        ContollerLogInfo(String.Format(
                             "ID[{0}] HW state change command published. HWID: {1}, cmd bit: 0x{2:D4}",
                             kvp.Key,
                             bitInfo.Id,
@@ -268,25 +268,9 @@ namespace HardwareSimMqtt
             }
         }
 
-        private void LogInfo(string text, Color color)
+        private void ContollerLogInfo(string text, Color color)
         {
-            SystemHelper.AppendRTBText(richTextBox1, text, color);
-        }
-
-        private void ControlWindow_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (BrokerConnectJob.Client.IsConnected)
-            {
-                BrokerConnectJob.Client.Disconnect();
-            }
-        }
-
-        private void ControlWindow_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            if (BrokerConnectJob.Client.IsConnected)
-            {
-                BrokerConnectJob.Client.Disconnect();
-            }
+            SystemHelper.AppendRTBText(richTextBox2, text, color);
         }
     }
 

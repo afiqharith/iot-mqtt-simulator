@@ -148,7 +148,7 @@ namespace Model
                 iAttempt++;
             }
 
-            if (IsConnected)
+            if (IsConnected && iAttempt == 1) //Only log when there is attempt to connect, otherwise it already connect
             {
                 elapsedTime = Environment.TickCount - timeStart;
                 Debug.WriteLine(String.Format("{0} connected. Bit: 0x{1:D4}, Elapsed: {2}ms", this.Id, this.BitMask.ToString("X"), elapsedTime));
