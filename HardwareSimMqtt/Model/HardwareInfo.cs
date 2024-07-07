@@ -1,18 +1,32 @@
 ﻿using System.Collections.Generic;
+using Model;
 
 namespace DataContainer
 {
-    using Model;
     public class BitInfo : IHardware
     {
-        public string Id { get; set; }
-        public uint CurrentBitState { get; set; }
-        public double AnalogData { get; set; }
+        public string Id
+        {
+            get;
+            set;
+        }
+
+        public uint BitState
+        {
+            get;
+            set;
+        }
+
+        public double AnalogData
+        {
+            get;
+            set;
+        }
 
         public BitInfo(string id, uint currentBitState = 0, double analogData = -1)
         {
             this.Id = id;
-            this.CurrentBitState = currentBitState;
+            this.BitState = currentBitState;
             this.AnalogData = analogData;
         }
     }
@@ -20,7 +34,11 @@ namespace DataContainer
     //Use ONLY when to serializing/deserializing to JSON object
     public class JsonBitInfoList
     {
-        public List<BitInfo> InfoList { get; set; }
+        public List<BitInfo> InfoList
+        {
+            get;
+            set;
+        }
 
         public JsonBitInfoList(List<BitInfo> bitInfoList)
         {
@@ -33,23 +51,41 @@ namespace DataContainer
 
 namespace QueryJob
 {
-    using Model;
     public interface IJob
     {
-        HardwareBase Hardware { get; }
+        HardwareBase Hardware
+        {
+            get;
+        }
+
         void Run();
     }
 
     public class SetHardwareStateJob : IJob
     {
-        public HardwareBase Hardware { get; private set; }
+        public HardwareBase Hardware
+        {
+            get;
+            private set;
+        }
 
-        public uint NewBitState { get; private set; }
+        public uint NewBitState
+        {
+            get;
+            private set;
+        }
 
-        public SetHardwareStateJob(HardwareBase hardware, uint newBitState = 0)
+        public double NewAnalogData
+        {
+            get;
+            private set;
+        }
+
+        public SetHardwareStateJob(HardwareBase hardware, uint newBitState = 0, double newAnalogData = -1)
         {
             this.Hardware = hardware;
             this.NewBitState = newBitState;
+            this.NewAnalogData = newAnalogData;
         }
 
         public virtual void Run()
@@ -58,16 +94,30 @@ namespace QueryJob
 
             if (bRet)
             {
-                this.Hardware.CurrentBitState = this.Hardware.BitMask & this.NewBitState;
+                this.Hardware.BitState = this.Hardware.BitMask & this.NewBitState;
             }
         }
     }
 
     public class ReadHardwareStateJob : IJob
     {
-        public HardwareBase Hardware { get; private set; }
+        public HardwareBase Hardware
+        {
+            get;
+            private set;
+        }
 
-        public uint CurrentBitState { get; private set; }
+        public uint BitState
+        {
+            get;
+            private set;
+        }
+
+        public double AnalogData
+        {
+            get;
+            set;
+        }
 
         public ReadHardwareStateJob(HardwareBase hardware)
         {
@@ -80,7 +130,8 @@ namespace QueryJob
 
             if (bRet)
             {
-                this.CurrentBitState = this.Hardware.CurrentBitState;
+                this.BitState = this.Hardware.BitState;
+                this.AnalogData = this.Hardware.AnalogData;
             }
         }
     }
