@@ -134,8 +134,6 @@ namespace HardwareSimMqtt
             qReadHardwareStateJob = new Queue<IJob>();
             InitializeBitSetDgv();
             InitializeSystemTimer();
-            progressBarInfoQ.Minimum = 1;
-            progressBarInfoQ.Step = 1;
 
 #if USETHREAD
             SetHardwareStateJobChangeThread = new Thread(new ThreadStart(MonitorSetHardwareStateJobChangeThread));
@@ -203,7 +201,7 @@ namespace HardwareSimMqtt
             }
         }
 
-        private void OnMqttMessageReceived(object sender, MqttMsgPublishEventArgs e)
+        private void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
         {
             JsonBitInfoList bitInfoList = JsonConvert.DeserializeObject<JsonBitInfoList>(Encoding.UTF8.GetString(e.Message));
             if (bitInfoList.InfoList == null) { return; }
@@ -256,6 +254,18 @@ namespace HardwareSimMqtt
                 panelLamp4,
             };
 
+            List<int> IoPort = new List<int>()
+            {
+                4,
+                17,
+                18,
+                21,
+                22,
+                23,
+                24,
+                25
+            };
+
             for (int i = 0; i < panelList.Count; i++)
             {
                 int bitMask = 1 << i;
@@ -266,7 +276,7 @@ namespace HardwareSimMqtt
                             panelList[i],
                             eLOC.Loc1 + i,
                             Convert.ToString(i + 1),
-                            (eBitMask)bitMask));
+                            (eBitMask)bitMask, IoPort[i]));
                 }
                 else
                 {
@@ -275,7 +285,7 @@ namespace HardwareSimMqtt
                             panelList[i],
                             eLOC.Loc1 + i - 4,
                             Convert.ToString(i - 3),
-                            (eBitMask)bitMask));
+                            (eBitMask)bitMask, IoPort[i]));
                 }
             }
 
@@ -317,7 +327,7 @@ namespace HardwareSimMqtt
                     break;
 
                 case STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT:
-                    listenerBrokerConnectJob.Client.MqttMsgPublishReceived += OnMqttMessageReceived;
+                    listenerBrokerConnectJob.Client.MqttMsgPublishReceived += OnMessageReceived;
                     iAutoNextStep = STATE.PU_SUBSCRIBE_TOPIC;
                     break;
 
@@ -448,7 +458,6 @@ namespace HardwareSimMqtt
                     }
                 }
             }
-            progressBarInfoQ.Maximum = qReadHardwareStateJob.Count;
 
 #if USETHREAD
             }
@@ -481,7 +490,6 @@ namespace HardwareSimMqtt
                                 kvp.Value.BitMask.ToString("X"),
                                 hardwareStateJob.BitState.ToString("X")),
                                 color);
-                        progressBarInfoQ.PerformStep();
                     }
                 }
             }

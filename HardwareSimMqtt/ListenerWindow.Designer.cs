@@ -36,7 +36,6 @@
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.DataGridViewBitSet = new System.Windows.Forms.DataGridView();
-            this.progressBarInfoQ = new System.Windows.Forms.ProgressBar();
             this.flowLayoutPanel6 = new System.Windows.Forms.FlowLayoutPanel();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.checkBoxUnitLamp1 = new System.Windows.Forms.CheckBox();
@@ -157,7 +156,6 @@
             // 
             this.tabPage2.Controls.Add(this.richTextBox1);
             this.tabPage2.Controls.Add(this.DataGridViewBitSet);
-            this.tabPage2.Controls.Add(this.progressBarInfoQ);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
@@ -173,7 +171,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.richTextBox1.Location = new System.Drawing.Point(4, 60);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(522, 99);
+            this.richTextBox1.Size = new System.Drawing.Size(522, 129);
             this.richTextBox1.TabIndex = 14;
             this.richTextBox1.Text = "";
             // 
@@ -198,15 +196,6 @@
             this.DataGridViewBitSet.ScrollBars = System.Windows.Forms.ScrollBars.None;
             this.DataGridViewBitSet.Size = new System.Drawing.Size(522, 48);
             this.DataGridViewBitSet.TabIndex = 15;
-            // 
-            // progressBarInfoQ
-            // 
-            this.progressBarInfoQ.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBarInfoQ.Location = new System.Drawing.Point(5, 166);
-            this.progressBarInfoQ.Name = "progressBarInfoQ";
-            this.progressBarInfoQ.Size = new System.Drawing.Size(521, 23);
-            this.progressBarInfoQ.TabIndex = 18;
             // 
             // flowLayoutPanel6
             // 
@@ -737,7 +726,6 @@
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.ProgressBar progressBarInfoQ;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel5;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel6;
         private System.Windows.Forms.GroupBox groupBox5;

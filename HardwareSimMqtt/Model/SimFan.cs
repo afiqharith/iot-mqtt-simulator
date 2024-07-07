@@ -29,8 +29,8 @@ namespace Model
             protected set => SetSpeedProperty(ref _speed, value);
         }
 
-        public SimFan(Panel panel, eLOC location, string id, eBitMask mask)
-            : base(eTYPE.FAN, location, id, mask)
+        public SimFan(Panel panel, eLOC location, string id, eBitMask mask, int ioPort)
+            : base(eTYPE.FAN, location, id, mask, ioPort)
         {
             this.pPanel = panel;
         }

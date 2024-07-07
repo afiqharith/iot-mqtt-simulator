@@ -63,7 +63,7 @@ namespace Model
         }
     }
 
-    public class HardwareBase : HHInterface, IHardware
+    public class HardwareBase : HHGeneralPurposeIO, IHardware
     {
         private string _id;
         public virtual string Id
@@ -113,8 +113,8 @@ namespace Model
             set => SetAnalogDataProperty(ref _analogData, value);
         }
 
-        public HardwareBase(eTYPE type, eLOC location, string id, eBitMask mask) 
-            : base("COM12", 9600)
+        public HardwareBase(eTYPE type, eLOC location, string id, eBitMask mask, int ioPort) 
+            : /*base("COM12", 9600)*/base(ioPort)
         {
             this.Type = type;
             this.Location = location;
@@ -167,7 +167,7 @@ namespace Model
                 try
                 {
                     //Create HW bit map connection here
-                    this.IsConnected = base.OpenSerialPort();
+                    this.IsConnected = base.OpenPort();
                 }
                 catch
                 {

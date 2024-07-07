@@ -22,8 +22,8 @@ namespace Model
             }
         }
 
-        public SimLamp(Panel panel, eLOC location, string id, eBitMask mask)
-            : base(eTYPE.LAMP, location, id, mask)
+        public SimLamp(Panel panel, eLOC location, string id, eBitMask mask, int ioPort)
+            : base(eTYPE.LAMP, location, id, mask, ioPort)
         {
             this.pPanel = panel;
         }
