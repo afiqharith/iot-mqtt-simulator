@@ -45,8 +45,22 @@ namespace Model
 
     public interface IHardware
     {
-        string Id { get; }
-        uint CurrentBitState { get; set; }
+        string Id 
+        { 
+            get; 
+        }
+
+        uint BitState 
+        { 
+            get; 
+            set; 
+        }
+
+        double AnalogData
+        {
+            get;
+            set;
+        }
     }
 
     public class HardwareBase : HHInterface, IHardware
@@ -54,48 +68,57 @@ namespace Model
         private string _id;
         public virtual string Id
         {
-            get { return _id; }
-            protected set
-            {
-                SetIdProperty(ref _id, value);
-            }
+            get => _id;
+            protected set => SetIdProperty(ref _id, value);
         }
-        public virtual eTYPE Type { get; protected set; }
-        public virtual eLOC Loc { get; protected set; }
-        public bool IsConnected { get; protected set; }
 
+        public virtual eTYPE Type
+        {
+            get;
+            protected set;
+        }
+
+        public virtual eLOC Location
+        {
+            get;
+            protected set;
+        }
+
+        public bool IsConnected
+        {
+            get;
+            protected set;
+        }
+
+        // Bit index for the hardware, bit map
         private uint _bitMask = 0;
-        /// <summary>
-        /// Bit index for the hardware, bit map
-        /// </summary>
         public virtual uint BitMask
         {
-            get { return _bitMask; }
-            protected set
-            {
-                SetBitMaskProperty(ref _bitMask, value);
-            }
+            get => _bitMask;
+            protected set => SetBitMaskProperty(ref _bitMask, value);
         }
 
-        private uint _currentBitState = 0;
-        /// <summary>
-        /// Bit state of the hardware at the bit index
-        /// </summary>
-        public virtual uint CurrentBitState
+        // Bit state of the hardware at the bit index
+        private uint _bitState = 0;
+        public virtual uint BitState
         {
-            get { return _currentBitState; }
-            set
-            {
-                SetCurrentBitStateProperty(ref _currentBitState, value);
-            }
+            get => _bitState;
+            set => SetCurrentBitStateProperty(ref _bitState, value);
         }
 
-        public HardwareBase(eTYPE type, eLOC loc, string nID, eBitMask mask) :
-            base("COM12", 9600)
+        private double _analogData = -1;
+        public virtual double AnalogData
+        {
+            get => _analogData;
+            set => SetAnalogDataProperty(ref _analogData, value);
+        }
+
+        public HardwareBase(eTYPE type, eLOC location, string id, eBitMask mask) 
+            : base("COM12", 9600)
         {
             this.Type = type;
-            this.Loc = loc;
-            this.Id = nID;
+            this.Location = location;
+            this.Id = id;
             this.BitMask = (uint)mask;
         }
 
@@ -120,13 +143,18 @@ namespace Model
         {
             bitMask = newval;
             //Map with hardware bit
-            base.BitMask = bitMask;
+            base.BitMask = newval;
         }
 
         private void SetCurrentBitStateProperty(ref uint bitState, uint newval)
         {
             bitState = newval;
             base.SendPacket(bitState);
+        }
+
+        private void SetAnalogDataProperty(ref double data, double newval)
+        {
+            data = newval;
         }
 
         public virtual bool Connect()
@@ -163,5 +191,6 @@ namespace Model
             }
             return IsConnected;
         }
+
     }
 }

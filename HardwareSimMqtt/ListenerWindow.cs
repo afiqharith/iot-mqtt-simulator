@@ -21,25 +21,70 @@ namespace HardwareSimMqtt
     //Listener
     public partial class ListenerWindow : Form
     {
-        private SetMqttBrokerConnectJob listenerBrokerConnectJob { get; set; }
-        private System.Windows.Forms.Timer systemTimer { get; set; }
-        private Queue<PacketInfo> QpacketInfoReceived { get; set; }
-        private Queue<IJob> QsetHardwareStateJob { get; set; }
-        private Queue<IJob> QreadHardwareStateJob { get; set; }
-        protected Dictionary<uint, HardwareBase> simHardwareMap { get; set; }
-        private uint realTimeBitSet { get; set; }
-        private DataTable bitSetDataTable { get; set; }
-        private bool bPowerUpFinish { get; set; }
-        private STATE iLastSwitchStep { get; set; }
+        private SetBrokerConnectJob listenerBrokerConnectJob
+        {
+            get;
+            set;
+        }
+
+        private System.Windows.Forms.Timer systemTimer 
+        { 
+            get; 
+            set; 
+        }
+
+        private Queue<PacketInfo> qPacketInfoReceived 
+        { 
+            get; 
+            set; 
+        }
+
+        private Queue<IJob> qSetHardwareStateJob 
+        { 
+            get; 
+            set; 
+        }
+
+        private Queue<IJob> qReadHardwareStateJob 
+        { 
+            get; 
+            set; 
+        }
+
+        protected Dictionary<uint, HardwareBase> simHardwareMap 
+        { 
+            get; 
+            set; 
+        }
+
+        private uint realTimeBitSet 
+        { 
+            get; 
+            set; 
+        }
+
+        private DataTable bitSetDataTable 
+        { 
+            get; set; 
+        }
+
+        private bool isPowerUpFinish 
+        { 
+            get; 
+            set; 
+        }
+
+        private STATE iLastSwitchStep 
+        { 
+            get; 
+            set; 
+        }
 
         private STATE _iAutoNextStep = 0;
         private STATE iAutoNextStep
         {
-            get { return _iAutoNextStep; }
-            set
-            {
-                SetNextStepProperty(ref _iAutoNextStep, value);
-            }
+            get => _iAutoNextStep; 
+            set => SetNextStepProperty(ref _iAutoNextStep, value);
         }
 
         //Use when de-packet the data receive from broker
@@ -66,18 +111,27 @@ namespace HardwareSimMqtt
         }
 
 #if USETHREAD
-        private Thread SetHardwareStateJobChangeThread { get; set; }
-        private Thread ReadHardwareStateJobChangeThread { get; set; }
+        private Thread SetHardwareStateJobChangeThread 
+        { 
+            get; 
+            set; 
+        }
+
+        private Thread ReadHardwareStateJobChangeThread 
+        { 
+            get; 
+            set; 
+        }
 #endif
         public ListenerWindow()
         {
             InitializeComponent();
 
             //Listener
-            bPowerUpFinish = false;
-            QpacketInfoReceived = new Queue<PacketInfo>();
-            QsetHardwareStateJob = new Queue<IJob>();
-            QreadHardwareStateJob = new Queue<IJob>();
+            isPowerUpFinish = false;
+            qPacketInfoReceived = new Queue<PacketInfo>();
+            qSetHardwareStateJob = new Queue<IJob>();
+            qReadHardwareStateJob = new Queue<IJob>();
             InitializeBitSetDgv();
             InitializeSystemTimer();
             progressBarInfoQ.Minimum = 1;
@@ -99,10 +153,10 @@ namespace HardwareSimMqtt
 #endif
 
             //Controller
-            QMsgContentToDisplayOnUI = new Queue<Dictionary<ushort, BitInfo>>();
+            qMsgContentToDisplayOnUI = new Queue<Dictionary<ushort, BitInfo>>();
             InitializeCheckBoxMapping();
 
-            controllerBrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
+            controllerBrokerConnectJob = new SetBrokerConnectJob("broker.emqx.io");
             bool bEstablished = controllerBrokerConnectJob.Run();
             if (bEstablished)
             {
@@ -117,7 +171,7 @@ namespace HardwareSimMqtt
                 listenerBrokerConnectJob.Client.Disconnect();
             }
 
-            if(controllerBrokerConnectJob.Client.IsConnected)
+            if (controllerBrokerConnectJob.Client.IsConnected)
             {
                 controllerBrokerConnectJob.Client.Disconnect();
             }
@@ -138,9 +192,9 @@ namespace HardwareSimMqtt
 
         private void SystemTimer_Tick(object sender, EventArgs e)
         {
-            if (!bPowerUpFinish)
+            if (!isPowerUpFinish)
             {
-                bPowerUpFinish = PowerUpOperation();
+                isPowerUpFinish = PowerUpOperation();
 
             }
             else
@@ -157,7 +211,7 @@ namespace HardwareSimMqtt
             PacketInfo packetInfoReceived;
             packetInfoReceived.topic = e.Topic;
             packetInfoReceived.bitInfoList = bitInfoList.InfoList;
-            QpacketInfoReceived.Enqueue(packetInfoReceived);
+            qPacketInfoReceived.Enqueue(packetInfoReceived);
         }
 
         private void SetNextStepProperty(ref STATE step, STATE newval)
@@ -257,7 +311,7 @@ namespace HardwareSimMqtt
             switch (iAutoNextStep)
             {
                 case STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER:
-                    listenerBrokerConnectJob = new SetMqttBrokerConnectJob("broker.emqx.io");
+                    listenerBrokerConnectJob = new SetBrokerConnectJob("broker.emqx.io");
                     bool bEstablished = listenerBrokerConnectJob.Run();
                     iAutoNextStep = !bEstablished ? STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER : STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT;
                     break;
@@ -280,18 +334,18 @@ namespace HardwareSimMqtt
                 case STATE.PU_SET_SIM_HARDWARE_INIT_STATE:
                     foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
                     {
-                        kvp.Value.CurrentBitState = kvp.Value.BitMask & ~kvp.Value.BitMask;
+                        kvp.Value.BitState = kvp.Value.BitMask & ~kvp.Value.BitMask;
                     }
                     iAutoNextStep = STATE.PU_COMPLETE;
                     break;
 
                 case STATE.PU_COMPLETE:
-                    bPowerUpFinish = true;
+                    isPowerUpFinish = true;
                     iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
             }
-            return bPowerUpFinish;
+            return isPowerUpFinish;
         }
 
         private bool AutoOperation()
@@ -299,12 +353,12 @@ namespace HardwareSimMqtt
             switch (iAutoNextStep)
             {
                 case STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST:
-                    iAutoNextStep = QpacketInfoReceived.Count == 0 ? STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST : STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE;
+                    iAutoNextStep = qPacketInfoReceived.Count == 0 ? STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST : STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE;
                     break;
 
                 case STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE:
                     TranslatePacketReceived();
-                    iAutoNextStep = QsetHardwareStateJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
+                    iAutoNextStep = qSetHardwareStateJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
                 case STATE.AUTO_UPDATE_HARDWARE_STATE:
@@ -312,7 +366,7 @@ namespace HardwareSimMqtt
                     MonitorSetHardwareStateJobChangeThread();
                     MonitorReadHardwareStateJobChangeThread();
 #endif
-                    if (QreadHardwareStateJob.Count == 0)
+                    if (qReadHardwareStateJob.Count == 0)
                     {
                         //Thread.Sleep(1000);
                         //progressBarInfoQ.Value = 0;
@@ -330,9 +384,9 @@ namespace HardwareSimMqtt
 
         private bool TranslatePacketReceived()
         {
-            while (QpacketInfoReceived.Count > 0)
+            while (qPacketInfoReceived.Count > 0)
             {
-                PacketInfo packetReceived = QpacketInfoReceived.Dequeue();
+                PacketInfo packetReceived = qPacketInfoReceived.Dequeue();
                 if (packetReceived.topic == "IotWinformSim")
                 {
                     for (int i = 0; i < packetReceived.bitInfoList.Count; i++)
@@ -341,16 +395,16 @@ namespace HardwareSimMqtt
                         {
                             if (kvp.Value.Id == packetReceived.bitInfoList[i].Id)
                             {
-                                QsetHardwareStateJob.Enqueue(
+                                qSetHardwareStateJob.Enqueue(
                                     new SetHardwareStateJob(
                                         kvp.Value,
-                                        packetReceived.bitInfoList[i].CurrentBitState));
+                                        packetReceived.bitInfoList[i].BitState));
 
                                 ListenerLogInfo(String.Format(
                                     "HW new state received. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}",
                                     packetReceived.bitInfoList[i].Id,
                                     kvp.Value.BitMask.ToString("X"),
-                                     packetReceived.bitInfoList[i].CurrentBitState.ToString("X")),
+                                     packetReceived.bitInfoList[i].BitState.ToString("X")),
                                     Color.Blue);
                             }
                         }
@@ -367,15 +421,15 @@ namespace HardwareSimMqtt
             while (true)
             {
 #endif
-            while (QsetHardwareStateJob.Count > 0)
+            while (qSetHardwareStateJob.Count > 0)
             {
-                SetHardwareStateJob hardwareStateJob = (SetHardwareStateJob)QsetHardwareStateJob.Dequeue();
+                SetHardwareStateJob hardwareStateJob = (SetHardwareStateJob)qSetHardwareStateJob.Dequeue();
 
                 foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
                 {
                     if (hardwareStateJob != null &&
                         kvp.Value.Id == hardwareStateJob.Hardware.Id &&
-                        kvp.Value.CurrentBitState != hardwareStateJob.NewBitState)
+                        kvp.Value.BitState != hardwareStateJob.NewBitState)
                     {
                         Color color = Color.Orange;
 
@@ -383,18 +437,18 @@ namespace HardwareSimMqtt
                                 "Set new HW state changed. HWID: {0}, mask bit: 0x{1:D4}, state bit change from 0x{2:D4} to 0x{3:D4}",
                                 hardwareStateJob.Hardware.Id,
                                 kvp.Value.BitMask.ToString("X"),
-                                kvp.Value.CurrentBitState.ToString("X"),
+                                kvp.Value.BitState.ToString("X"),
                                 hardwareStateJob.NewBitState.ToString("X")),
                                 color);
                         hardwareStateJob.Run();
 
-                        QreadHardwareStateJob.Enqueue(new ReadHardwareStateJob(kvp.Value));
+                        qReadHardwareStateJob.Enqueue(new ReadHardwareStateJob(kvp.Value));
 
-                        UpdateBitSetDgvData(hardwareStateJob.Hardware.BitMask, hardwareStateJob.Hardware.CurrentBitState);
+                        UpdateBitSetDgvData(hardwareStateJob.Hardware.BitMask, hardwareStateJob.Hardware.BitState);
                     }
                 }
             }
-            progressBarInfoQ.Maximum = QreadHardwareStateJob.Count;
+            progressBarInfoQ.Maximum = qReadHardwareStateJob.Count;
 
 #if USETHREAD
             }
@@ -407,9 +461,9 @@ namespace HardwareSimMqtt
             while (true)
             {
 #endif
-            while (QreadHardwareStateJob.Count > 0)
+            while (qReadHardwareStateJob.Count > 0)
             {
-                ReadHardwareStateJob hardwareStateJob = (ReadHardwareStateJob)QreadHardwareStateJob.Dequeue();
+                ReadHardwareStateJob hardwareStateJob = (ReadHardwareStateJob)qReadHardwareStateJob.Dequeue();
 
                 foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
                 {
@@ -419,13 +473,13 @@ namespace HardwareSimMqtt
                         )
                     {
                         hardwareStateJob.Run();
-                        Color color = ((hardwareStateJob.CurrentBitState & kvp.Value.CurrentBitState) != 0) ? Color.Green : Color.OrangeRed;
+                        Color color = ((hardwareStateJob.BitState & kvp.Value.BitState) != 0) ? Color.Green : Color.OrangeRed;
 
                         ListenerLogInfo(String.Format(
                                 "Read HW state changed done. HWID: {0}, mask bit: 0x{1:D4}, current state bit 0x{2:D4}",
                                 hardwareStateJob.Hardware.Id,
                                 kvp.Value.BitMask.ToString("X"),
-                                hardwareStateJob.CurrentBitState.ToString("X")),
+                                hardwareStateJob.BitState.ToString("X")),
                                 color);
                         progressBarInfoQ.PerformStep();
                     }
@@ -434,7 +488,7 @@ namespace HardwareSimMqtt
 #if USETHREAD
             }
 #endif
-        }        
+        }
 
         private void UpdateBitSetDgvData(uint bitMask, uint currentBitState)
         {

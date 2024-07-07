@@ -1,42 +1,36 @@
 ﻿using System.Windows.Forms;
+using System.Drawing;
+using BitMap;
 
 namespace Model
 {
-    using BitMap;
-    using System.Drawing;
-
     internal class SimFan : HardwareBase
     {
         private Panel _pPanel = null;
         private Panel pPanel
         {
-            get { return _pPanel; }
-            set
-            {
-                SetPanelProperty(ref _pPanel, value);
-            }
+            get => _pPanel;
+            set => SetPanelProperty(ref _pPanel, value);
         }
-        public override uint CurrentBitState
+
+        public override uint BitState
         {
             set
             {
-                base.CurrentBitState = value;
-                this.pPanel.BackColor = (value & this.BitMask) == this.BitMask ? Color.Green : Color.Gray;
+                base.BitState = value;
+                this.pPanel.BackColor = GetUiBackColorIndicator(value);
             }
         }
 
-        private double _speed;
+        private double _speed = -1;
         public virtual double Speed
         {
-            get { return _speed; }
-            protected set
-            {
-                SetSpeedProperty(ref _speed, value);
-            }
+            get => _speed;
+            protected set => SetSpeedProperty(ref _speed, value);
         }
 
-        public SimFan(Panel panel, eLOC loc, string nID, eBitMask mask)
-            : base(eTYPE.FAN, loc, nID, mask)
+        public SimFan(Panel panel, eLOC location, string id, eBitMask mask)
+            : base(eTYPE.FAN, location, id, mask)
         {
             this.pPanel = panel;
         }
@@ -46,10 +40,15 @@ namespace Model
             panel = newval;
         }
 
-
         private void SetSpeedProperty(ref double speed, double newval)
         {
+            speed = newval;
+            base.AnalogData = newval;
+        }
 
+        private Color GetUiBackColorIndicator(uint bit)
+        {
+            return (bit & this.BitMask) == this.BitMask ? Color.Green : Color.Gray;
         }
     }
 }

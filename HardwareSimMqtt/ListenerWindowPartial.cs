@@ -25,17 +25,42 @@ namespace HardwareSimMqtt
                 this.Data = new List<CheckBox>();
             }
         }
-        private SetMqttBrokerConnectJob controllerBrokerConnectJob { get; set; }
-        private Queue<Dictionary<ushort, BitInfo>> QMsgContentToDisplayOnUI { get; set; }
-        private Dictionary<CheckBox, UnitCheckBoxList> LocGroupCheckBoxListUnitCBMap { get; set; }
-        private Dictionary<string, CheckBox> IdCheckBoxMap { get; set; }
-        private Dictionary<CheckBox, eBitMask> CheckBoxMaskMap { get; set; }
+
+        private SetBrokerConnectJob controllerBrokerConnectJob
+        {
+            get;
+            set;
+        }
+
+        private Queue<Dictionary<ushort, BitInfo>> qMsgContentToDisplayOnUI
+        {
+            get;
+            set;
+        }
+
+        private Dictionary<CheckBox, UnitCheckBoxList> locGroupCheckBoxListUnitCBMap
+        {
+            get;
+            set;
+        }
+
+        private Dictionary<string, CheckBox> idCheckBoxMap
+        {
+            get;
+            set;
+        }
+
+        private Dictionary<CheckBox, eBitMask> checkBoxMaskMap
+        {
+            get;
+            set;
+        }
 
         private void InitializeCheckBoxMapping()
         {
-            LocGroupCheckBoxListUnitCBMap = new Dictionary<CheckBox, UnitCheckBoxList>();
-            IdCheckBoxMap = new Dictionary<string, CheckBox>();
-            CheckBoxMaskMap = new Dictionary<CheckBox, eBitMask>();
+            locGroupCheckBoxListUnitCBMap = new Dictionary<CheckBox, UnitCheckBoxList>();
+            idCheckBoxMap = new Dictionary<string, CheckBox>();
+            checkBoxMaskMap = new Dictionary<CheckBox, eBitMask>();
 
             //List containing all unit check box
             List<CheckBox> checkBoxUnitList = new List<CheckBox>()
@@ -69,7 +94,7 @@ namespace HardwareSimMqtt
             for (int i = 0; i < checkBoxLocGroupList.Count; i++)
             {
                 checkBoxLocGroupList[i].CheckStateChanged += new EventHandler(CheckboxLoc_CheckStateChanged);
-                if(checkBoxLocGroupList[i] == checkBoxShutdownAll)
+                if (checkBoxLocGroupList[i] == checkBoxShutdownAll)
                 {
                     continue;
                 }
@@ -87,7 +112,7 @@ namespace HardwareSimMqtt
 
                 //Map bitmask to each unit check box
                 int nMask = 1 << (int)i;
-                CheckBoxMaskMap.Add(checkBoxUnitList[i], (eBitMask)nMask);
+                checkBoxMaskMap.Add(checkBoxUnitList[i], (eBitMask)nMask);
 
                 //Need to work on this to make it simpler
                 {
@@ -95,13 +120,13 @@ namespace HardwareSimMqtt
                     {
                         nFanId++;
                         string strFanId = String.Format("F_ID{0}", nFanId);
-                        IdCheckBoxMap.Add(strFanId, checkBoxUnitList[i]);
+                        idCheckBoxMap.Add(strFanId, checkBoxUnitList[i]);
                     }
                     else if (checkBoxUnitList[i].Name.ToLower().Contains("lamp".ToLower()))
                     {
                         nLampId++;
                         string strLampId = String.Format("L_ID{0}", nLampId);
-                        IdCheckBoxMap.Add(strLampId, checkBoxUnitList[i]);
+                        idCheckBoxMap.Add(strLampId, checkBoxUnitList[i]);
                     }
 
                     if (checkBoxUnitList[i].Name.Contains("1"))
@@ -129,7 +154,7 @@ namespace HardwareSimMqtt
                 {
                     continue;
                 }
-                LocGroupCheckBoxListUnitCBMap.Add(checkBoxLocGroupList[i], groupedUnitCheckBoxList[i]);
+                locGroupCheckBoxListUnitCBMap.Add(checkBoxLocGroupList[i], groupedUnitCheckBoxList[i]);
             }
         }
 
@@ -145,13 +170,13 @@ namespace HardwareSimMqtt
 
             if (checkbox.Name != "checkBoxShutdownAll")
             {
-                foreach (KeyValuePair<CheckBox, UnitCheckBoxList> kvpLoc in LocGroupCheckBoxListUnitCBMap)
+                foreach (KeyValuePair<CheckBox, UnitCheckBoxList> kvpLoc in locGroupCheckBoxListUnitCBMap)
                 {
                     if (checkbox.Name == kvpLoc.Key.Name)
                     {
                         for (int i = 0; i < kvpLoc.Value.Data.Count; i++)
                         {
-                            foreach (KeyValuePair<string, CheckBox> kvpId in IdCheckBoxMap)
+                            foreach (KeyValuePair<string, CheckBox> kvpId in idCheckBoxMap)
                             {
                                 if (kvpLoc.Value.Data[i] == kvpId.Value)
                                 {
@@ -160,7 +185,7 @@ namespace HardwareSimMqtt
                                     kvpId.Value.CheckStateChanged += new EventHandler(CheckboxUnit_CheckStateChanged);
 
 
-                                    uint bitState = checkbox.Checked ? (uint)CheckBoxMaskMap[kvpId.Value] : ((uint)CheckBoxMaskMap[kvpId.Value] & (uint)~CheckBoxMaskMap[kvpId.Value]);
+                                    uint bitState = checkbox.Checked ? (uint)checkBoxMaskMap[kvpId.Value] : ((uint)checkBoxMaskMap[kvpId.Value] & (uint)~checkBoxMaskMap[kvpId.Value]);
                                     bitInfoList.Add(new BitInfo(kvpId.Key, bitState));
                                 }
                             }
@@ -170,17 +195,17 @@ namespace HardwareSimMqtt
             }
             else
             {
-                foreach (KeyValuePair<string, CheckBox> kvpId in IdCheckBoxMap)
+                foreach (KeyValuePair<string, CheckBox> kvpId in idCheckBoxMap)
                 {
                     kvpId.Value.CheckStateChanged -= new EventHandler(CheckboxUnit_CheckStateChanged);
                     kvpId.Value.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
                     kvpId.Value.CheckStateChanged += new EventHandler(CheckboxUnit_CheckStateChanged);
 
-                    uint bitState = checkbox.Checked ? (uint)CheckBoxMaskMap[kvpId.Value] : ((uint)CheckBoxMaskMap[kvpId.Value] & (uint)~CheckBoxMaskMap[kvpId.Value]);
+                    uint bitState = checkbox.Checked ? (uint)checkBoxMaskMap[kvpId.Value] : ((uint)checkBoxMaskMap[kvpId.Value] & (uint)~checkBoxMaskMap[kvpId.Value]);
                     bitInfoList.Add(new BitInfo(kvpId.Key, bitState));
                 }
 
-                foreach (KeyValuePair<CheckBox, UnitCheckBoxList> kvpLoc in LocGroupCheckBoxListUnitCBMap)
+                foreach (KeyValuePair<CheckBox, UnitCheckBoxList> kvpLoc in locGroupCheckBoxListUnitCBMap)
                 {
                     kvpLoc.Key.CheckStateChanged -= new EventHandler(CheckboxLoc_CheckStateChanged);
                     kvpLoc.Key.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
@@ -188,7 +213,7 @@ namespace HardwareSimMqtt
                 }
             }
 
-            PublishHardwareInfoToBroker(bitInfoList);
+            PublishBitInfoToBroker(bitInfoList);
         }
 
         private void CheckboxUnit_CheckStateChanged(object sender, EventArgs e)
@@ -201,19 +226,19 @@ namespace HardwareSimMqtt
 
             List<BitInfo> bitInfoList = new List<BitInfo>();
 
-            foreach (KeyValuePair<string, CheckBox> kvpId in IdCheckBoxMap)
+            foreach (KeyValuePair<string, CheckBox> kvpId in idCheckBoxMap)
             {
                 if (checkbox == kvpId.Value)
                 {
-                    uint bitState = checkbox.Checked ? (uint)CheckBoxMaskMap[kvpId.Value] : ((uint)CheckBoxMaskMap[kvpId.Value] & (uint)~CheckBoxMaskMap[kvpId.Value]);
+                    uint bitState = checkbox.Checked ? (uint)checkBoxMaskMap[kvpId.Value] : ((uint)checkBoxMaskMap[kvpId.Value] & (uint)~checkBoxMaskMap[kvpId.Value]);
                     bitInfoList.Add(new BitInfo(kvpId.Key, bitState));
                 }
             }
 
-            PublishHardwareInfoToBroker(bitInfoList);
+            PublishBitInfoToBroker(bitInfoList);
         }
 
-        private void PublishHardwareInfoToBroker(List<BitInfo> bitInfoList)
+        private void PublishBitInfoToBroker(List<BitInfo> bitInfoList)
         {
             string jsonifiedBitInfoList = JsonConvert.SerializeObject(new JsonBitInfoList(bitInfoList));
 
@@ -231,13 +256,13 @@ namespace HardwareSimMqtt
                     //Queue HardwareInfoList content to display on UI 
                     Dictionary<ushort, BitInfo> messageMap = new Dictionary<ushort, BitInfo>();
                     messageMap.Add(msgID, bitInfoList[i]);
-                    QMsgContentToDisplayOnUI.Enqueue(messageMap);
+                    qMsgContentToDisplayOnUI.Enqueue(messageMap);
 
                     ContollerLogInfo(String.Format(
                         "ID[{0}] HW state change command sent. HWID: {1}, cmd bit: 0x{2:D4}",
                         msgID,
                         bitInfoList[i].Id,
-                        bitInfoList[i].CurrentBitState.ToString("X")),
+                        bitInfoList[i].BitState.ToString("X")),
                         Color.Gray);
                 }
             }
@@ -247,10 +272,10 @@ namespace HardwareSimMqtt
         {
             if (e.IsPublished)
             {
-                while (QMsgContentToDisplayOnUI.Count > 0)
+                while (qMsgContentToDisplayOnUI.Count > 0)
                 {
                     //De-queue message content to display on UI
-                    Dictionary<ushort, BitInfo> messageMap = QMsgContentToDisplayOnUI.Dequeue();
+                    Dictionary<ushort, BitInfo> messageMap = qMsgContentToDisplayOnUI.Dequeue();
 
                     foreach (KeyValuePair<ushort, BitInfo> kvp in messageMap)
                     {
@@ -260,8 +285,8 @@ namespace HardwareSimMqtt
                             "ID[{0}] HW state change command published. HWID: {1}, cmd bit: 0x{2:D4}",
                             kvp.Key,
                             bitInfo.Id,
-                            bitInfo.CurrentBitState.ToString("X")),
-                            bitInfo.CurrentBitState != 0 ? Color.Blue : Color.OrangeRed);
+                            bitInfo.BitState.ToString("X")),
+                            bitInfo.BitState != 0 ? Color.Blue : Color.OrangeRed);
 
                     }
                 }
@@ -274,24 +299,42 @@ namespace HardwareSimMqtt
         }
     }
 
-    public class SetMqttBrokerConnectJob
+    public class SetBrokerConnectJob
     {
-        public MqttClient Client { get; set; }
-        public string BrokerHostName { get; private set; }
-
-        public SetMqttBrokerConnectJob(string brokerHostName)
+        public MqttClient Client
         {
-            BrokerHostName = brokerHostName;
+            get;
+            set;
+        }
+
+        public string BrokerHostName
+        {
+            get;
+            private set;
+        }
+
+        public SetBrokerConnectJob(string brokerHostName)
+        {
+            this.BrokerHostName = brokerHostName;
+
+            if (this.Client == null)
+            {
+                this.Client = new MqttClient(this.BrokerHostName);
+            }
         }
 
         public virtual bool Run()
         {
-            Client = new MqttClient(BrokerHostName);
+            if(this.Client == null)
+            { 
+                return false; 
+            }
+
             string guid = Convert.ToString(Guid.NewGuid());
             bool bSuccess = true;
             try
             {
-                Client.Connect(guid, "emqx", "public");
+                this.Client.Connect(guid, "emqx", "public");
             }
             catch
             {

@@ -1,33 +1,29 @@
 ﻿using System.Windows.Forms;
+using System.Drawing;
+using BitMap;
 
 namespace Model
 {
-    using BitMap;
-    using System.Drawing;
-
     internal class SimLamp : HardwareBase
     {
         private Panel _pPanel = null;
         private Panel pPanel
         {
-            get { return _pPanel; }
-            set
-            {
-                SetPanelProperty(ref _pPanel, value);
-            }
+            get => _pPanel;
+            set => SetPanelProperty(ref _pPanel, value);
         }
 
-        public override uint CurrentBitState
+        public override uint BitState
         {
             set
             {
-                base.CurrentBitState = value;
-                this.pPanel.BackColor = (value & this.BitMask) == this.BitMask ? Color.Green : Color.Gray;
+                base.BitState = value;
+                this.pPanel.BackColor = GetUiBackColorIndicator(value);
             }
         }
 
-        public SimLamp(Panel panel, eLOC loc, string nID, eBitMask mask)
-            : base(eTYPE.LAMP, loc, nID, mask)
+        public SimLamp(Panel panel, eLOC location, string id, eBitMask mask)
+            : base(eTYPE.LAMP, location, id, mask)
         {
             this.pPanel = panel;
         }
@@ -35,6 +31,11 @@ namespace Model
         private void SetPanelProperty(ref Panel panel, Panel newval)
         {
             panel = newval;
+        }
+
+        private Color GetUiBackColorIndicator(uint bit)
+        {
+            return (bit & this.BitMask) == this.BitMask ? Color.Green : Color.Gray;
         }
     }
 }

@@ -6,11 +6,29 @@ namespace HardwareMap
 {
     public class HHInterface
     {
-        protected string PortName { get; set; }
-        protected int BaudRate { get; set; }
-        private SerialPort serialPort { get; set; }
+        protected string PortName
+        {
+            get;
+            set;
+        }
 
-        public virtual uint BitMask { get; set; }
+        protected int BaudRate
+        {
+            get;
+            set;
+        }
+
+        private SerialPort serialPort
+        {
+            get;
+            set;
+        }
+
+        public virtual uint BitMask
+        {
+            get;
+            set;
+        }
 
         public HHInterface(string portName, int baudRate)
         {
@@ -36,7 +54,7 @@ namespace HardwareMap
                     //serialPort.Open();
                 }
 
-                if(serialPort.IsOpen)
+                if (serialPort.IsOpen)
                 {
                     bRet = true;
                 }
