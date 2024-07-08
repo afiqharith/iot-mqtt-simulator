@@ -12,17 +12,30 @@ namespace HardwareSimMqtt.Interface
         {
             get;
         }
-
         uint BitState
         {
             get;
             set;
         }
-
+        uint BitMask
+        {
+            get;
+        }
         double AnalogData
         {
             get;
             set;
         }
+        bool IsOn
+        {
+            get;
+        }
+        bool IsOff
+        {
+            get;
+        }
+        bool Connect();
+        void On();
+        void Off();
     }
 }
