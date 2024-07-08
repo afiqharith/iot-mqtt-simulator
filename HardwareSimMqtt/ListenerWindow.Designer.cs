@@ -1,4 +1,4 @@
-﻿namespace HardwareSimMqtt
+﻿namespace ModelInterface
 {
     partial class ListenerWindow
     {

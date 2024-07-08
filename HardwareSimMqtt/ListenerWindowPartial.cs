@@ -1,6 +1,4 @@
-﻿using BitMap;
-using DataContainer;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -10,8 +8,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
+using HardwareSimMqtt.Model.BitMap;
+using HardwareSimMqtt.Model.DataContainer;
 
-namespace HardwareSimMqtt
+namespace ModelInterface
 {
     //Controller
     public partial class ListenerWindow
@@ -93,7 +93,7 @@ namespace HardwareSimMqtt
             //So each check box group contain list of unit check box
             for (int i = 0; i < checkBoxLocGroupList.Count; i++)
             {
-                checkBoxLocGroupList[i].CheckStateChanged += new EventHandler(CheckboxLoc_CheckStateChanged);
+                checkBoxLocGroupList[i].CheckStateChanged += new EventHandler(CheckboxLoc_OnCheckStateChanged);
                 if (checkBoxLocGroupList[i] == checkBoxShutdownAll)
                 {
                     continue;
@@ -108,7 +108,7 @@ namespace HardwareSimMqtt
             for (int i = 0; i < checkBoxUnitList.Count; i++)
             {
                 //Register unit check box event handler
-                checkBoxUnitList[i].CheckStateChanged += new EventHandler(CheckboxUnit_CheckStateChanged);
+                checkBoxUnitList[i].CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
 
                 //Map bitmask to each unit check box
                 int nMask = 1 << (int)i;
@@ -158,7 +158,7 @@ namespace HardwareSimMqtt
             }
         }
 
-        private void CheckboxLoc_CheckStateChanged(object sender, EventArgs e)
+        private void CheckboxLoc_OnCheckStateChanged(object sender, EventArgs e)
         {
             CheckBox checkbox = (CheckBox)sender;
             if (checkbox.CheckState == CheckState.Indeterminate)
@@ -180,9 +180,9 @@ namespace HardwareSimMqtt
                             {
                                 if (kvpLoc.Value.Data[i] == kvpId.Value)
                                 {
-                                    kvpId.Value.CheckStateChanged -= new EventHandler(CheckboxUnit_CheckStateChanged);
+                                    kvpId.Value.CheckStateChanged -= new EventHandler(CheckboxUnit_OnCheckStateChanged);
                                     kvpId.Value.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
-                                    kvpId.Value.CheckStateChanged += new EventHandler(CheckboxUnit_CheckStateChanged);
+                                    kvpId.Value.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
 
 
                                     uint bitState = checkbox.Checked ? (uint)checkBoxMaskMap[kvpId.Value] : ((uint)checkBoxMaskMap[kvpId.Value] & (uint)~checkBoxMaskMap[kvpId.Value]);
@@ -197,9 +197,9 @@ namespace HardwareSimMqtt
             {
                 foreach (KeyValuePair<string, CheckBox> kvpId in idCheckBoxMap)
                 {
-                    kvpId.Value.CheckStateChanged -= new EventHandler(CheckboxUnit_CheckStateChanged);
+                    kvpId.Value.CheckStateChanged -= new EventHandler(CheckboxUnit_OnCheckStateChanged);
                     kvpId.Value.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
-                    kvpId.Value.CheckStateChanged += new EventHandler(CheckboxUnit_CheckStateChanged);
+                    kvpId.Value.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
 
                     uint bitState = checkbox.Checked ? (uint)checkBoxMaskMap[kvpId.Value] : ((uint)checkBoxMaskMap[kvpId.Value] & (uint)~checkBoxMaskMap[kvpId.Value]);
                     bitInfoList.Add(new BitInfo(kvpId.Key, bitState));
@@ -207,16 +207,16 @@ namespace HardwareSimMqtt
 
                 foreach (KeyValuePair<CheckBox, UnitCheckBoxList> kvpLoc in locGroupCheckBoxListUnitCBMap)
                 {
-                    kvpLoc.Key.CheckStateChanged -= new EventHandler(CheckboxLoc_CheckStateChanged);
+                    kvpLoc.Key.CheckStateChanged -= new EventHandler(CheckboxLoc_OnCheckStateChanged);
                     kvpLoc.Key.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
-                    kvpLoc.Key.CheckStateChanged += new EventHandler(CheckboxLoc_CheckStateChanged);
+                    kvpLoc.Key.CheckStateChanged += new EventHandler(CheckboxLoc_OnCheckStateChanged);
                 }
             }
 
             PublishBitInfoToBroker(bitInfoList);
         }
 
-        private void CheckboxUnit_CheckStateChanged(object sender, EventArgs e)
+        private void CheckboxUnit_OnCheckStateChanged(object sender, EventArgs e)
         {
             CheckBox checkbox = (CheckBox)sender;
             if (checkbox.CheckState == CheckState.Indeterminate)
@@ -246,7 +246,7 @@ namespace HardwareSimMqtt
             {
                 //Publish JSON converted HardwareInfoList to MQTT server
                 ushort msgID = controllerBrokerConnectJob.Client.Publish(
-                    "IotWinformSim",
+                    TOPIC,
                     Encoding.UTF8.GetBytes(jsonifiedBitInfoList),
                     MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
                     true);
@@ -268,7 +268,7 @@ namespace HardwareSimMqtt
             }
         }
 
-        private void OnMqttMessagePublished(object sender, MqttMsgPublishedEventArgs e)
+        private void OnMessagePublished(object sender, MqttMsgPublishedEventArgs e)
         {
             if (e.IsPublished)
             {
@@ -295,7 +295,7 @@ namespace HardwareSimMqtt
 
         private void ContollerLogInfo(string text, Color color)
         {
-            SystemHelper.AppendRTBText(richTextBox2, text, color);
+            SystemHelper.AppendRichTextBox(richTextBox2, text, color);
         }
     }
 

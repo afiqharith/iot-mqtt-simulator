@@ -1,8 +1,8 @@
 ﻿using System.Windows.Forms;
 using System.Drawing;
-using BitMap;
+using HardwareSimMqtt.Model.BitMap;
 
-namespace Model
+namespace HardwareSimMqtt.Model
 {
     internal class SimFan : HardwareBase
     {
@@ -18,7 +18,7 @@ namespace Model
             set
             {
                 base.BitState = value;
-                this.pPanel.BackColor = GetUiBackColorIndicator(value);
+                this.pPanel.BackColor = GetUiBackColorIndicator(this.IsOn);
             }
         }
 
@@ -35,10 +35,7 @@ namespace Model
             this.pPanel = panel;
         }
 
-        private void SetPanelProperty(ref Panel panel, Panel newval)
-        {
-            panel = newval;
-        }
+        private void SetPanelProperty(ref Panel panel, Panel newval) => panel = newval;
 
         private void SetSpeedProperty(ref double speed, double newval)
         {
@@ -46,9 +43,6 @@ namespace Model
             base.AnalogData = newval;
         }
 
-        private Color GetUiBackColorIndicator(uint bit)
-        {
-            return (bit & this.BitMask) == this.BitMask ? Color.Green : Color.Gray;
-        }
+        private Color GetUiBackColorIndicator(bool isOn) => isOn ? Color.Green : Color.Gray;
     }
 }

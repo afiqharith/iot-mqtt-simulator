@@ -102,7 +102,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="InterfaceHardwareHub\InterfaceHardwareHub.cs" />
+    <Compile Include="HardwareHub\HHGeneralPurposeIO.cs" />
+    <Compile Include="HardwareHub\HHSerialPort.cs" />
+    <Compile Include="HardwareHub\HHInterface.cs" />
+    <Compile Include="Interface\IJob.cs" />
     <Compile Include="ListenerWindow.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -112,9 +115,14 @@
     <Compile Include="ListenerWindowPartial.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Interface\IHardware.cs" />
+    <Compile Include="Model\BitMap\BitMap.cs" />
+    <Compile Include="Model\DataContainer\BitInfo.cs" />
+    <Compile Include="Model\DataContainer\JsonBitInfoList.cs" />
+    <Compile Include="Model\QueryJob\ReadHardwareStateJob.cs" />
+    <Compile Include="Model\QueryJob\SetHardwareStateJob.cs" />
     <Compile Include="Model\SimLamp.cs" />
     <Compile Include="Model\SimFan.cs" />
-    <Compile Include="Model\HardwareInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Model\HardwareBase.cs" />

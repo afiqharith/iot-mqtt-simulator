@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HardwareSimMqtt.Properties {
+namespace ModelInterface.Properties {
     using System;
     
     

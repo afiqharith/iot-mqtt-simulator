@@ -1,27 +1,12 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Threading;
+using HardwareSimMqtt.Model.BitMap;
+using HardwareSimMqtt.Interface;
+using HardwareSimMqtt.HardwareHub;
 
-namespace BitMap
+namespace HardwareSimMqtt.Model
 {
-    public enum eBitMask
-    {
-        Bit0 = 1 << 0, //0x0001 //Fan1
-        Bit1 = 1 << 1, //0x0002 //Fan2
-        Bit2 = 1 << 2, //0x0004 //Fan3
-        Bit3 = 1 << 3, //0x0008 //Fan4
-        Bit4 = 1 << 4, //0x0016 //Lamp1
-        Bit5 = 1 << 5, //0x0032 //Lamp2
-        Bit6 = 1 << 6, //0x0064 //Lamp3
-        Bit7 = 1 << 7, //0x0128 //Lamp4
-    }
-}
-
-namespace Model
-{
-    using BitMap;
-    using System.Diagnostics;
-    using System.Threading;
-    using HardwareMap;
-
     public enum eTYPE
     {
         LAMP,
@@ -43,27 +28,7 @@ namespace Model
         Loc4
     }
 
-    public interface IHardware
-    {
-        string Id 
-        { 
-            get; 
-        }
-
-        uint BitState 
-        { 
-            get; 
-            set; 
-        }
-
-        double AnalogData
-        {
-            get;
-            set;
-        }
-    }
-
-    public class HardwareBase : HHGeneralPurposeIO, IHardware
+    public class HardwareBase : IHardware
     {
         private string _id;
         public virtual string Id
@@ -84,10 +49,22 @@ namespace Model
             protected set;
         }
 
-        public bool IsConnected
+        public virtual bool IsConnected
         {
             get;
             protected set;
+        }
+
+        public virtual bool IsOn
+        {
+            get;
+            private set;
+        }
+
+        public virtual bool IsOff
+        {
+            get;
+            private set;
         }
 
         // Bit index for the hardware, bit map
@@ -113,13 +90,30 @@ namespace Model
             set => SetAnalogDataProperty(ref _analogData, value);
         }
 
-        public HardwareBase(eTYPE type, eLOC location, string id, eBitMask mask, int ioPort) 
-            : /*base("COM12", 9600)*/base(ioPort)
+        private HHInterface HHController 
+        { 
+            get; 
+            set; 
+        }
+
+        public HardwareBase(eTYPE type, eLOC location, string id, eBitMask mask, int ioPort)
         {
+            this.HHController = new HHGeneralPurposeIO(ioPort);
             this.Type = type;
             this.Location = location;
             this.Id = id;
             this.BitMask = (uint)mask;
+
+        }
+
+        public HardwareBase(eTYPE type, eLOC location, string id, eBitMask mask, string portName, int baudRate)
+        {
+            this.HHController = new HHSerialPort(portName, baudRate);
+            this.Type = type;
+            this.Location = location;
+            this.Id = id;
+            this.BitMask = (uint)mask;
+
         }
 
         private void SetIdProperty(ref string id, string newval)
@@ -143,13 +137,15 @@ namespace Model
         {
             bitMask = newval;
             //Map with hardware bit
-            base.BitMask = newval;
+            this.HHController.BitMask = newval;
         }
 
         private void SetCurrentBitStateProperty(ref uint bitState, uint newval)
         {
             bitState = newval;
-            base.SendPacket(bitState);
+            this.HHController.SendDigitalCommand(this.BitState);
+            this.IsOn = GetNewBitStateValue(this.BitState) == this.BitMask;
+            this.IsOff = !this.IsOn;
         }
 
         private void SetAnalogDataProperty(ref double data, double newval)
@@ -157,17 +153,23 @@ namespace Model
             data = newval;
         }
 
+        public virtual uint GetNewBitStateValue(uint newBitState) => this.BitMask & newBitState;
+
+        public virtual void On() => this.BitState = GetNewBitStateValue(this.BitMask);
+
+        public virtual void Off() => this.BitState = GetNewBitStateValue(~this.BitMask);
+
         public virtual bool Connect()
         {
             int iAttempt = 0;
             int elapsedTime = 0;
             int timeStart = Environment.TickCount;
-            while (!IsConnected && iAttempt < 3)
+            while (!this.IsConnected && iAttempt < 3)
             {
                 try
                 {
-                    //Create HW bit map connection here
-                    this.IsConnected = base.OpenPort();
+                    //Attempt hardware connection here
+                    this.IsConnected = this.HHController.OpenPort();
                 }
                 catch
                 {
