@@ -6,25 +6,11 @@ using System.Threading.Tasks;
 
 namespace HardwareSimMqtt.Interface
 {
-    internal interface IHardware
+    internal interface IHardware: IHardwarePartial
     {
-        string Id
-        {
-            get;
-        }
-        uint BitState
-        {
-            get;
-            set;
-        }
         uint BitMask
         {
             get;
-        }
-        double AnalogData
-        {
-            get;
-            set;
         }
         bool IsOn
         {
@@ -37,5 +23,23 @@ namespace HardwareSimMqtt.Interface
         bool Connect();
         void On();
         void Off();
+    }
+
+    internal interface IHardwarePartial
+    {
+        string Id
+        {
+            get;
+        }
+        uint BitState
+        {
+            get;
+            set;
+        }
+        double AnalogData
+        {
+            get;
+            set;
+        }
     }
 }

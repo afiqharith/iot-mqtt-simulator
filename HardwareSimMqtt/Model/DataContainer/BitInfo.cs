@@ -7,7 +7,7 @@ using HardwareSimMqtt.Interface;
 
 namespace HardwareSimMqtt.Model.DataContainer
 {
-    public class BitInfo : IHardware
+    public class BitInfo : IHardwarePartial
     {
         public string Id
         {
