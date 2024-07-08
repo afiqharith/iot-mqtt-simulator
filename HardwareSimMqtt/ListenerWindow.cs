@@ -14,6 +14,7 @@ using HardwareSimMqtt.Model;
 using HardwareSimMqtt.Model.DataContainer;
 using HardwareSimMqtt.Model.QueryJob;
 using HardwareSimMqtt.Model.BitMap;
+using System.Configuration;
 
 namespace ModelInterface
 {
@@ -264,7 +265,6 @@ namespace ModelInterface
 
         private void InitializeHardwareMap()
         {
-            simHardwareMap = new Dictionary<uint, HardwareBase>();
             List<Panel> panelList = new List<Panel>()
             {
                 panelFan1,
@@ -278,38 +278,36 @@ namespace ModelInterface
                 panelLamp4,
             };
 
-            List<int> IoPort = new List<int>()
+            simHardwareMap = new Dictionary<uint, HardwareBase>();
+            int totalPort = Convert.ToInt32(ConfigurationManager.AppSettings.Get("TotalPort"));
+            if (totalPort == panelList.Count)
             {
-                4,
-                17,
-                18,
-                21,
-                22,
-                23,
-                24,
-                25
-            };
+                for (int i = 0; i < totalPort; i++)
+                {
+                    eType etype = (eType)Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_Type", i)));
+                    eLocation elocation = (eLocation)Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_Loc", i)));
+                    int ioPort = Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_IOPort", i)));
+                    eBitMask ebitMask = (eBitMask)(1 << i);
 
-            for (int i = 0; i < panelList.Count; i++)
-            {
-                int bitMask = 1 << i;
-                if (i < 4)
-                {
-                    simHardwareMap.Add((uint)i,
-                        new SimFan(
-                            panelList[i],
-                            eLOC.Loc1 + i,
-                            Convert.ToString(i + 1),
-                            (eBitMask)bitMask, IoPort[i]));
-                }
-                else
-                {
-                    simHardwareMap.Add((uint)i,
-                        new SimLamp(
-                            panelList[i],
-                            eLOC.Loc1 + i - 4,
-                            Convert.ToString(i - 3),
-                            (eBitMask)bitMask, IoPort[i]));
+                    HardwareBase simHardware;
+
+                    if (etype == eType.LAMP)
+                    {
+                        simHardware = new SimLamp(panelList[i], elocation, Convert.ToString((int)elocation), ebitMask, ioPort);
+                    }
+                    else if (etype == eType.FAN)
+                    {
+                        simHardware = new SimFan(panelList[i], elocation, Convert.ToString((int)elocation), ebitMask, ioPort);
+                    }
+                    else
+                    {
+                        simHardware = new HardwareBase(etype, elocation, Convert.ToString((int)elocation), ebitMask, ioPort);
+                    }
+
+                    if (simHardware != null)
+                    {
+                        simHardwareMap.Add(Convert.ToUInt32(i), simHardware);
+                    }
                 }
             }
 

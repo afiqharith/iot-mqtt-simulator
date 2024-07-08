@@ -29,8 +29,14 @@ namespace HardwareSimMqtt.Model
             protected set => SetSpeedProperty(ref _speed, value);
         }
 
-        public SimFan(Panel panel, eLOC location, string id, eBitMask mask, int ioPort)
-            : base(eTYPE.FAN, location, id, mask, ioPort)
+        public SimFan(Panel panel, eLocation location, string id, eBitMask mask, int ioPort)
+            : base(eType.FAN, location, id, mask, ioPort)
+        {
+            this.pPanel = panel;
+        }
+
+        public SimFan(Panel panel, eLocation location, string id, eBitMask mask, string portName, int baudRate = 9600)
+            : base(eType.FAN, location, id, mask, portName, baudRate)
         {
             this.pPanel = panel;
         }

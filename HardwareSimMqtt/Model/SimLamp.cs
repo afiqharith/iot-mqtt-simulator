@@ -22,8 +22,14 @@ namespace HardwareSimMqtt.Model
             }
         }
 
-        public SimLamp(Panel panel, eLOC location, string id, eBitMask mask, int ioPort)
-            : base(eTYPE.LAMP, location, id, mask, ioPort)
+        public SimLamp(Panel panel, eLocation location, string id, eBitMask mask, int ioPort)
+            : base(eType.LAMP, location, id, mask, ioPort)
+        {
+            this.pPanel = panel;
+        }
+
+        public SimLamp(Panel panel, eLocation location, string id, eBitMask mask, string portName, int baudRate)
+            : base(eType.LAMP, location, id, mask, portName, baudRate)
         {
             this.pPanel = panel;
         }

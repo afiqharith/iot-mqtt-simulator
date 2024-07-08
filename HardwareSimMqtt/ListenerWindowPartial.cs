@@ -119,13 +119,13 @@ namespace ModelInterface
                     if (checkBoxUnitList[i].Name.ToLower().Contains("fan".ToLower()))
                     {
                         nFanId++;
-                        string strFanId = String.Format("F_ID{0}", nFanId);
+                        string strFanId = String.Format("HWFID{0}", nFanId);
                         idCheckBoxMap.Add(strFanId, checkBoxUnitList[i]);
                     }
                     else if (checkBoxUnitList[i].Name.ToLower().Contains("lamp".ToLower()))
                     {
                         nLampId++;
-                        string strLampId = String.Format("L_ID{0}", nLampId);
+                        string strLampId = String.Format("HWLID{0}", nLampId);
                         idCheckBoxMap.Add(strLampId, checkBoxUnitList[i]);
                     }
 

@@ -7,7 +7,7 @@ using HardwareSimMqtt.HardwareHub;
 
 namespace HardwareSimMqtt.Model
 {
-    public enum eTYPE
+    public enum eType
     {
         LAMP,
         FAN,
@@ -15,7 +15,7 @@ namespace HardwareSimMqtt.Model
         GATE,
     }
 
-    public enum eLOC
+    public enum eLocation
     {
         Area1,
         Area2,
@@ -37,13 +37,13 @@ namespace HardwareSimMqtt.Model
             protected set => SetIdProperty(ref _id, value);
         }
 
-        public virtual eTYPE Type
+        public virtual eType Type
         {
             get;
             protected set;
         }
 
-        public virtual eLOC Location
+        public virtual eLocation Location
         {
             get;
             protected set;
@@ -96,7 +96,8 @@ namespace HardwareSimMqtt.Model
             set; 
         }
 
-        public HardwareBase(eTYPE type, eLOC location, string id, eBitMask mask, int ioPort)
+        //Using GPIO
+        public HardwareBase(eType type, eLocation location, string id, eBitMask mask, int ioPort)
         {
             this.HHController = new HHGeneralPurposeIO(ioPort);
             this.Type = type;
@@ -106,7 +107,8 @@ namespace HardwareSimMqtt.Model
 
         }
 
-        public HardwareBase(eTYPE type, eLOC location, string id, eBitMask mask, string portName, int baudRate)
+        //Using SerialPort
+        public HardwareBase(eType type, eLocation location, string id, eBitMask mask, string portName, int baudRate = 9600)
         {
             this.HHController = new HHSerialPort(portName, baudRate);
             this.Type = type;
@@ -121,13 +123,21 @@ namespace HardwareSimMqtt.Model
             string createdId = String.Empty;
             switch (this.Type)
             {
-                case eTYPE.FAN:
-                    createdId = String.Format("F_ID{0}", newval);
+                default:
+                case eType.LAMP:
+                    createdId = String.Format("HWLID{0}", newval);
                     break;
 
-                default:
-                case eTYPE.LAMP:
-                    createdId = String.Format("L_ID{0}", newval);
+                case eType.FAN:
+                    createdId = String.Format("HWFID{0}", newval);
+                    break;
+
+                case eType.AIR_CONDITIONER:
+                    createdId = String.Format("HWACID{0}", newval);
+                    break;
+
+                case eType.GATE:
+                    createdId = String.Format("HWGID{0}", newval);
                     break;
             }
             id = createdId;
