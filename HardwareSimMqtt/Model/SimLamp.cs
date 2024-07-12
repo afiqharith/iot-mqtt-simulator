@@ -1,6 +1,7 @@
 ﻿using System.Windows.Forms;
 using System.Drawing;
 using HardwareSimMqtt.Model.BitMap;
+using HardwareSimMqtt.UIComponent;
 
 namespace HardwareSimMqtt.Model
 {
@@ -13,28 +14,42 @@ namespace HardwareSimMqtt.Model
             set => SetPanelProperty(ref _pPanel, value);
         }
 
+        private HardwareViewer hardwareViewer { get; set; }
+
         public override uint BitState
         {
             set
             {
                 base.BitState = value;
-                this.pPanel.BackColor = GetUiBackColorIndicator(this.IsOn);
+                if (this.pPanel != null)
+                {
+                    this.pPanel.BackColor = GetUiBackColorIndicator(this.IsOn);
+                }
+
+                if (this.hardwareViewer != null)
+                {
+                    this.hardwareViewer.ToggleUiLamp(this.IsOn);
+                }
             }
         }
 
-        public SimLamp(Panel panel, eLocation location, string id, eBitMask mask, int ioPort)
-            : base(eType.LAMP, location, id, mask, ioPort)
-        {
-            this.pPanel = panel;
-        }
+        public SimLamp(string id, eBitMask mask, eLocation location, int ioPort)
+            : base(id, mask, eHardwareType.LAMP, location, ioPort) { }
 
-        public SimLamp(Panel panel, eLocation location, string id, eBitMask mask, string portName, int baudRate)
-            : base(eType.LAMP, location, id, mask, portName, baudRate)
-        {
-            this.pPanel = panel;
-        }
+        public SimLamp(string id, eBitMask mask, eLocation location, string portName, int baudRate)
+            : base(id, mask, eHardwareType.LAMP, location, portName, baudRate) { }
 
         private void SetPanelProperty(ref Panel panel, Panel newval) => panel = newval;
+
+        public void BindWithUIComponent(Panel panel)
+        {
+            this.pPanel = panel;
+        }
+
+        public void BindWithUiComponent(HardwareViewer hardwareViewer)
+        {
+            this.hardwareViewer = hardwareViewer;
+        }
 
         private Color GetUiBackColorIndicator(bool isOn) => isOn ? Color.Green : Color.Gray;
     }

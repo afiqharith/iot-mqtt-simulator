@@ -15,6 +15,8 @@ using HardwareSimMqtt.Model.DataContainer;
 using HardwareSimMqtt.Model.QueryJob;
 using HardwareSimMqtt.Model.BitMap;
 using System.Configuration;
+using HardwareSimMqtt.HardwareHub;
+using HardwareSimMqtt.UIComponent;
 
 namespace ModelInterface
 {
@@ -263,52 +265,99 @@ namespace ModelInterface
             return true;
         }
 
-        private void InitializeHardwareMap()
+        private void InitializeHardwareBitMap()
         {
             List<Panel> panelList = new List<Panel>()
             {
-                panelFan1,
-                panelFan2,
-                panelFan3,
-                panelFan4,
+                //panelFan1,
+                //panelFan2,
+                //panelFan3,
+                //panelFan4,
 
-                panelLamp1,
-                panelLamp2,
-                panelLamp3,
-                panelLamp4,
+                //panelLamp1,
+                //panelLamp2,
+                //panelLamp3,
+                //panelLamp4,
             };
 
             simHardwareMap = new Dictionary<uint, HardwareBase>();
-            int totalPort = Convert.ToInt32(ConfigurationManager.AppSettings.Get("TotalPort"));
-            if (totalPort == panelList.Count)
+            int totalPort = Convert.ToInt32(ConfigurationManager.AppSettings.Get("TotalIO"));
+            Dictionary<eLocation, HardwareViewer> hardwareViewerMap = new Dictionary<eLocation, HardwareViewer>();
+            for (int i = 0; i < totalPort; i++)
             {
-                for (int i = 0; i < totalPort; i++)
+                eControllerType econtrollerType = (eControllerType)Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_ControllerType", i)));
+                eHardwareType ehardwaretype = (eHardwareType)Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_HardwareType", i)));
+                eLocation elocation = (eLocation)Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_Loc", i)));
+                eBitMask ebitMask = (eBitMask)(1 << i);
+                string id = Convert.ToString((int)elocation);
+
+
+                HardwareBase simHardware;
+                if (econtrollerType == eControllerType.GPIO)
                 {
-                    eType etype = (eType)Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_Type", i)));
-                    eLocation elocation = (eLocation)Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_Loc", i)));
                     int ioPort = Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_IOPort", i)));
-                    eBitMask ebitMask = (eBitMask)(1 << i);
 
-                    HardwareBase simHardware;
-
-                    if (etype == eType.LAMP)
+                    if (ehardwaretype == eHardwareType.LAMP)
                     {
-                        simHardware = new SimLamp(panelList[i], elocation, Convert.ToString((int)elocation), ebitMask, ioPort);
+                        simHardware = new SimLamp(id, ebitMask, elocation, ioPort);
                     }
-                    else if (etype == eType.FAN)
+                    else if (ehardwaretype == eHardwareType.FAN)
                     {
-                        simHardware = new SimFan(panelList[i], elocation, Convert.ToString((int)elocation), ebitMask, ioPort);
+                        simHardware = new SimFan(id, ebitMask, elocation, ioPort);
                     }
                     else
                     {
-                        simHardware = new HardwareBase(etype, elocation, Convert.ToString((int)elocation), ebitMask, ioPort);
-                    }
-
-                    if (simHardware != null)
-                    {
-                        simHardwareMap.Add(Convert.ToUInt32(i), simHardware);
+                        simHardware = new HardwareBase(id, ebitMask, ehardwaretype, elocation, ioPort);
                     }
                 }
+                else if (econtrollerType == eControllerType.SerialPort)
+                {
+                    string comPort = ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_COMPort", i));
+                    int baudRate = Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_BaudRate", i)));
+                    if (ehardwaretype == eHardwareType.LAMP)
+                    {
+                        simHardware = new SimLamp(id, ebitMask, elocation, comPort, baudRate);
+                    }
+                    else if (ehardwaretype == eHardwareType.FAN)
+                    {
+                        simHardware = new SimFan(id, ebitMask, elocation, comPort, baudRate);
+                    }
+                    else
+                    {
+                        simHardware = new HardwareBase(id, ebitMask, ehardwaretype, elocation, comPort, baudRate);
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+
+                if (!hardwareViewerMap.ContainsKey(elocation) || hardwareViewerMap[elocation] == null)
+                {
+                    hardwareViewerMap[elocation] = new HardwareViewer(elocation);
+                }
+
+                if (simHardware != null)
+                {
+                    Type hwType = simHardware.GetType();
+                    if (hwType == typeof(SimLamp))
+                    {
+                        hardwareViewerMap[elocation].BindLampId(simHardware.Id);
+                        ((SimLamp)simHardware).BindWithUiComponent(hardwareViewerMap[elocation]);
+                    }
+                    else if (hwType == typeof(SimFan))
+                    {
+                        hardwareViewerMap[elocation].BindFanId(simHardware.Id);
+                        ((SimFan)simHardware).BindWithUiComponent(hardwareViewerMap[elocation]);
+                    }
+                    simHardwareMap.Add(Convert.ToUInt32(i), simHardware);
+                }
+
+            }
+
+            foreach (KeyValuePair<eLocation, HardwareViewer> kvp in hardwareViewerMap)
+            {
+                hardwareViewerFlowLayoutPanel.Controls.Add(kvp.Value);
             }
 
             //Do connection attempt
@@ -367,7 +416,7 @@ namespace ModelInterface
                     break;
 
                 case STATE.PU_INIT_SIM_HARDWARE_INSTANCE:
-                    InitializeHardwareMap();
+                    InitializeHardwareBitMap();
                     iAutoNextStep = STATE.PU_SET_SIM_HARDWARE_INIT_STATE;
                     break;
 
@@ -549,6 +598,32 @@ namespace ModelInterface
                 bitSetDataTable.Rows[0][String.Format("Bit{0}", nCol)] = iResult;
             }
             DataGridViewBitSet.DataSource = bitSetDataTable;
+        }
+
+        private void panel1_Paint(object sender, PaintEventArgs e)
+        {
+
+            // Get the Graphics object
+            Graphics g = e.Graphics;
+
+            int x = 0; // X coordinate of the top-left corner
+            int y = 0; // Y coordinate of the top-left corner
+            int diameter = 15; // Diameter of the circle
+
+            // Create a brush to fill the circle
+            using (Brush brush = new SolidBrush(Color.LightBlue))
+            {
+                // Fill the circle
+                g.FillEllipse(brush, x, y, diameter, diameter);
+            }
+
+            // Create a pen to draw the circle's outline
+            using (Pen pen = new Pen(Color.Blue, 2))
+            {
+                // Draw the circle's outline
+                g.DrawEllipse(pen, x, y, diameter, diameter);
+            }
+            //g.DrawEllipse(new Pen(Color.Black, 2), 0, 0, 15, 15);
         }
     }
 

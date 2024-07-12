@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define SIMULATE
+using System;
 using System.Diagnostics;
 using System.Threading;
 using HardwareSimMqtt.Model.BitMap;
@@ -7,7 +8,7 @@ using HardwareSimMqtt.HardwareHub;
 
 namespace HardwareSimMqtt.Model
 {
-    public enum eType
+    public enum eHardwareType
     {
         LAMP,
         FAN,
@@ -17,7 +18,7 @@ namespace HardwareSimMqtt.Model
 
     public enum eLocation
     {
-        Area1,
+        Area1 = 1,
         Area2,
         Area3,
         Area4,
@@ -37,7 +38,7 @@ namespace HardwareSimMqtt.Model
             protected set => SetIdProperty(ref _id, value);
         }
 
-        public virtual eType Type
+        public virtual eHardwareType Type
         {
             get;
             protected set;
@@ -90,16 +91,20 @@ namespace HardwareSimMqtt.Model
             set => SetAnalogDataProperty(ref _analogData, value);
         }
 
-        private HHInterface HHController 
-        { 
-            get; 
-            set; 
+        private IComController ComController
+        {
+            get;
+            set;
         }
 
         //Using GPIO
-        public HardwareBase(eType type, eLocation location, string id, eBitMask mask, int ioPort)
+        public HardwareBase(string id, eBitMask mask, eHardwareType type, eLocation location, int ioPort)
         {
-            this.HHController = new HHGeneralPurposeIO(ioPort);
+#if !SIMULATE
+            this.ComController = new HHGPIOController(ioPort);
+#else
+            this.ComController = new HHEmuGPIOController(ioPort);
+#endif
             this.Type = type;
             this.Location = location;
             this.Id = id;
@@ -108,14 +113,13 @@ namespace HardwareSimMqtt.Model
         }
 
         //Using SerialPort
-        public HardwareBase(eType type, eLocation location, string id, eBitMask mask, string portName, int baudRate = 9600)
+        public HardwareBase(string id, eBitMask mask, eHardwareType type, eLocation location, string portName, int baudRate = 9600)
         {
-            this.HHController = new HHSerialPort(portName, baudRate);
-            this.Type = type;
-            this.Location = location;
+            this.ComController = new HHSerialPortController(portName, baudRate);
             this.Id = id;
             this.BitMask = (uint)mask;
-
+            this.Type = type;
+            this.Location = location;
         }
 
         private void SetIdProperty(ref string id, string newval)
@@ -124,19 +128,19 @@ namespace HardwareSimMqtt.Model
             switch (this.Type)
             {
                 default:
-                case eType.LAMP:
+                case eHardwareType.LAMP:
                     createdId = String.Format("HWLID{0}", newval);
                     break;
 
-                case eType.FAN:
+                case eHardwareType.FAN:
                     createdId = String.Format("HWFID{0}", newval);
                     break;
 
-                case eType.AIR_CONDITIONER:
+                case eHardwareType.AIR_CONDITIONER:
                     createdId = String.Format("HWACID{0}", newval);
                     break;
 
-                case eType.GATE:
+                case eHardwareType.GATE:
                     createdId = String.Format("HWGID{0}", newval);
                     break;
             }
@@ -147,13 +151,13 @@ namespace HardwareSimMqtt.Model
         {
             bitMask = newval;
             //Map with hardware bit
-            this.HHController.BitMask = newval;
+            this.ComController.BitMask = newval;
         }
 
         private void SetCurrentBitStateProperty(ref uint bitState, uint newval)
         {
             bitState = newval;
-            this.HHController.SendDigitalCommand(this.BitState);
+            this.ComController.SendDigitalCommand(this.BitState);
             this.IsOn = GetNewBitStateValue(this.BitState) == this.BitMask;
             this.IsOff = !this.IsOn;
         }
@@ -161,6 +165,7 @@ namespace HardwareSimMqtt.Model
         private void SetAnalogDataProperty(ref double data, double newval)
         {
             data = newval;
+            this.ComController.SendAnalogCommand(data);
         }
 
         public virtual uint GetNewBitStateValue(uint newBitState) => this.BitMask & newBitState;
@@ -179,7 +184,7 @@ namespace HardwareSimMqtt.Model
                 try
                 {
                     //Attempt hardware connection here
-                    this.IsConnected = this.HHController.OpenPort();
+                    this.IsConnected = this.ComController.OpenPort();
                 }
                 catch
                 {

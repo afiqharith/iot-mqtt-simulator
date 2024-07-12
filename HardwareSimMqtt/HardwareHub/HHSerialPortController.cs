@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace HardwareSimMqtt.HardwareHub
 {
-    public class HHSerialPort : HHInterface
+    public class HHSerialPortController : IComController
     {
         protected string PortName
         {
@@ -33,15 +33,22 @@ namespace HardwareSimMqtt.HardwareHub
             set;
         }
 
-        public HHSerialPort(string portName, int baudRate)
+        public virtual eControllerType ControllerType
         {
+            get;
+            private set;
+        }
+
+        public HHSerialPortController(string portName, int baudRate)
+        {
+            this.ControllerType = eControllerType.SerialPort;
             this.PortName = portName;
             this.BaudRate = baudRate;
             serialPort = new SerialPort(this.PortName, this.BaudRate);
             serialPort.DataReceived += new SerialDataReceivedEventHandler(OnSerialDataReceived);
         }
 
-        ~HHSerialPort()
+        ~HHSerialPortController()
         {
             serialPort.Close();
         }
