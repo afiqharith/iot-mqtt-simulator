@@ -103,6 +103,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EventArgsModel\PublishBitInfoToBrokerEventArgs.cs" />
     <Compile Include="HardwareHub\HHGPIOController.cs" />
     <Compile Include="HardwareHub\HHSerialPortController.cs" />
     <Compile Include="HardwareHub\HHEmuGPIOController.cs" />
@@ -122,6 +123,7 @@
     <Compile Include="Model\DataContainer\BitInfo.cs" />
     <Compile Include="Model\DataContainer\JsonBitInfoList.cs" />
     <Compile Include="Model\QueryJob\ReadHardwareStateJob.cs" />
+    <Compile Include="Model\QueryJob\SetBrokerConnectJob.cs" />
     <Compile Include="Model\QueryJob\SetHardwareStateJob.cs" />
     <Compile Include="Model\SimLamp.cs" />
     <Compile Include="Model\SimFan.cs" />
@@ -129,11 +131,17 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Model\HardwareBase.cs" />
     <Compile Include="SystemHelper.cs" />
-    <Compile Include="UIComponent\HardwareViewer.cs">
+    <Compile Include="UIComponent\HardwareControllerGroup.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="UIComponent\HardwareViewer.Designer.cs">
-      <DependentUpon>HardwareViewer.cs</DependentUpon>
+    <Compile Include="UIComponent\HardwareControllerGroup.Designer.cs">
+      <DependentUpon>HardwareControllerGroup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIComponent\HardwareViewerGroup.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIComponent\HardwareViewerGroup.Designer.cs">
+      <DependentUpon>HardwareViewerGroup.cs</DependentUpon>
     </Compile>
     <EmbeddedResource Include="ListenerWindow.resx">
       <DependentUpon>ListenerWindow.cs</DependentUpon>
@@ -148,8 +156,11 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="UIComponent\HardwareViewer.resx">
-      <DependentUpon>HardwareViewer.cs</DependentUpon>
+    <EmbeddedResource Include="UIComponent\HardwareControllerGroup.resx">
+      <DependentUpon>HardwareControllerGroup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIComponent\HardwareViewerGroup.resx">
+      <DependentUpon>HardwareViewerGroup.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

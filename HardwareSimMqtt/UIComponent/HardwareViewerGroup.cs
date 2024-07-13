@@ -11,28 +11,28 @@ using System.Windows.Forms;
 
 namespace HardwareSimMqtt.UIComponent
 {
-    public partial class HardwareViewer : UserControl
+    public partial class HardwareViewerGroup : UserControl
     {
-        private eLocation _elocation;
-        public eLocation GroupLocation
+        private eGroup _egroup;
+        public eGroup GroupLocation
         {
-            get => _elocation;
-            set => SetGroupLocationProperty(ref _elocation, value);
+            get => _egroup;
+            set => SetGroupLocationProperty(ref _egroup, value);
         }
-        public HardwareViewer(eLocation elocation)
+        public HardwareViewerGroup(eGroup egroup)
         {
             InitializeComponent();
-            this.GroupLocation = elocation;
+            this.GroupLocation = egroup;
         }
 
-        public HardwareViewer()
+        public HardwareViewerGroup()
         {
             InitializeComponent();
         }
 
-        private void SetGroupLocationProperty(ref eLocation _location, eLocation newval)
+        private void SetGroupLocationProperty(ref eGroup _group, eGroup newval)
         {
-            _location = newval;
+            _group = newval;
             this.GroupBoxLoc.Text = String.Format("Group Loc{0}", (int)newval);
         }
 

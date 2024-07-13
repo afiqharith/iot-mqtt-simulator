@@ -2,6 +2,7 @@
 using System.Drawing;
 using HardwareSimMqtt.Model.BitMap;
 using HardwareSimMqtt.UIComponent;
+using HardwareSimMqtt.HardwareHub;
 
 namespace HardwareSimMqtt.Model
 {
@@ -14,7 +15,7 @@ namespace HardwareSimMqtt.Model
             set => SetPanelProperty(ref _pPanel, value);
         }
 
-        private HardwareViewer hardwareViewer { get; set; }
+        private HardwareViewerGroup hardwareViewer { get; set; }
 
         public override uint BitState
         {
@@ -33,11 +34,11 @@ namespace HardwareSimMqtt.Model
             }
         }
 
-        public SimLamp(string id, eBitMask mask, eLocation location, int ioPort)
-            : base(id, mask, eHardwareType.LAMP, location, ioPort) { }
+        public SimLamp(string id, eBitMask mask, eGroup location, eIoType ioType, int ioPort)
+            : base(id, mask, eHardwareType.LAMP, location, ioType, ioPort) { }
 
-        public SimLamp(string id, eBitMask mask, eLocation location, string portName, int baudRate)
-            : base(id, mask, eHardwareType.LAMP, location, portName, baudRate) { }
+        public SimLamp(string id, eBitMask mask, eGroup location, eIoType ioType, string portName, int baudRate)
+            : base(id, mask, eHardwareType.LAMP, location, ioType, portName, baudRate) { }
 
         private void SetPanelProperty(ref Panel panel, Panel newval) => panel = newval;
 
@@ -46,7 +47,7 @@ namespace HardwareSimMqtt.Model
             this.pPanel = panel;
         }
 
-        public void BindWithUiComponent(HardwareViewer hardwareViewer)
+        public void BindWithUiComponent(HardwareViewerGroup hardwareViewer)
         {
             this.hardwareViewer = hardwareViewer;
         }

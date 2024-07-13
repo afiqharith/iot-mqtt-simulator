@@ -17,9 +17,18 @@ namespace HardwareSimMqtt.HardwareHub
         { 
             get;
         }
+
+        eIoType IoType
+        {
+            get;
+        }
+
         bool OpenPort();
-        void SendDigitalCommand(uint bitState);
-        void SendAnalogCommand(double analogData);
+        void SendDigitalOutputCommand(uint bitState);
+        bool GetDigitalInputValue();
+
+        void SendAnalogOutputCommand(int analogData);
+        int GetAnalogInputValue();
     }
 
     public enum eControllerType
@@ -27,5 +36,13 @@ namespace HardwareSimMqtt.HardwareHub
         GPIO,
         SerialPort,
         EmuGPIO,
+    }
+
+    public enum eIoType
+    {
+        DigitalInput,
+        DigitalOutput,
+        AnalogInput,
+        AnalogOutput,
     }
 }

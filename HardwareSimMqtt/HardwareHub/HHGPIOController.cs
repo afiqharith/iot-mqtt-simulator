@@ -24,14 +24,21 @@ namespace HardwareSimMqtt.HardwareHub
             private set;
         }
 
+        public virtual eIoType IoType
+        {
+            get;
+            private set;
+        }
+
         public virtual GpioController Controller
         {
             get;
             set;
         }
 
-        public HHGPIOController(int ioPort)
+        public HHGPIOController(eIoType ioType, int ioPort)
         {
+            this.IoType = ioType;
             this.IoPort = ioPort;
             this.ControllerType = eControllerType.GPIO;
             Controller = new GpioController();
@@ -44,7 +51,14 @@ namespace HardwareSimMqtt.HardwareHub
             {
                 if (!Controller.IsPinOpen(this.IoPort))
                 {
-                    SetPinOutput(this.IoPort);
+                    if (this.IoType == eIoType.DigitalInput)
+                    {
+                        SetDigitalInput(this.IoPort);
+                    }
+                    else if (this.IoType == eIoType.DigitalOutput)
+                    {
+                        SetDigitalOutput(this.IoPort);
+                    }
                 }
 
                 if (Controller.IsPinOpen(this.IoPort))
@@ -59,17 +73,20 @@ namespace HardwareSimMqtt.HardwareHub
             return bRet;
         }
 
-        private void SetPinOutput(int pin)
+        //Set digital output pin
+        private void SetDigitalOutput(int pin)
         {
             Controller.OpenPin(pin, PinMode.Output);
         }
 
-        private void SetPinInput(int pin)
+        //Set digital input pin
+        private void SetDigitalInput(int pin)
         {
             Controller.OpenPin(pin, PinMode.Input);
         }
 
-        public void SendDigitalCommand(uint bitState)
+        //Send digital output command
+        public void SendDigitalOutputCommand(uint bitState)
         {
             uint newBitState = this.BitMask & bitState;
             PinValue pinValue = newBitState != 0 ? PinValue.High : PinValue.Low;
@@ -77,7 +94,17 @@ namespace HardwareSimMqtt.HardwareHub
             Thread.Sleep(10);
         }
 
-        public void SendAnalogCommand(double analogData)
-        { }
+        //Get digital input value
+        public bool GetDigitalInputValue()
+        {
+            return Controller.Read(this.IoPort) == PinValue.High ? true : false;
+        }
+
+        public void SendAnalogOutputCommand(int analogData) { }
+
+        public int GetAnalogInputValue()
+        {
+            return 0;
+        }
     }
 }

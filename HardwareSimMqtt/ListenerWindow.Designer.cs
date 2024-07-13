@@ -36,7 +36,7 @@
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.DataGridViewBitSet = new System.Windows.Forms.DataGridView();
-            this.flowLayoutPanel6 = new System.Windows.Forms.FlowLayoutPanel();
+            this.hardwareControllerFlowLayoutPanel = new System.Windows.Forms.FlowLayoutPanel();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.checkBoxUnitLamp1 = new System.Windows.Forms.CheckBox();
             this.checkBoxUnitFan1 = new System.Windows.Forms.CheckBox();
@@ -60,7 +60,7 @@
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.DataGridViewBitSet)).BeginInit();
-            this.flowLayoutPanel6.SuspendLayout();
+            this.hardwareControllerFlowLayoutPanel.SuspendLayout();
             this.groupBox5.SuspendLayout();
             this.groupBox6.SuspendLayout();
             this.groupBox7.SuspendLayout();
@@ -70,7 +70,7 @@
             // panel1
             // 
             this.panel1.Controls.Add(this.tabControl1);
-            this.panel1.Controls.Add(this.flowLayoutPanel6);
+            this.panel1.Controls.Add(this.hardwareControllerFlowLayoutPanel);
             this.panel1.Controls.Add(this.hardwareViewerFlowLayoutPanel);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
@@ -157,19 +157,19 @@
             this.DataGridViewBitSet.Size = new System.Drawing.Size(522, 48);
             this.DataGridViewBitSet.TabIndex = 15;
             // 
-            // flowLayoutPanel6
+            // hardwareControllerFlowLayoutPanel
             // 
-            this.flowLayoutPanel6.AutoSize = true;
-            this.flowLayoutPanel6.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.flowLayoutPanel6.Controls.Add(this.groupBox5);
-            this.flowLayoutPanel6.Controls.Add(this.groupBox6);
-            this.flowLayoutPanel6.Controls.Add(this.groupBox7);
-            this.flowLayoutPanel6.Controls.Add(this.groupBox8);
-            this.flowLayoutPanel6.Controls.Add(this.checkBoxShutdownAll);
-            this.flowLayoutPanel6.Location = new System.Drawing.Point(9, 351);
-            this.flowLayoutPanel6.Name = "flowLayoutPanel6";
-            this.flowLayoutPanel6.Size = new System.Drawing.Size(435, 97);
-            this.flowLayoutPanel6.TabIndex = 32;
+            this.hardwareControllerFlowLayoutPanel.AutoScroll = true;
+            this.hardwareControllerFlowLayoutPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.hardwareControllerFlowLayoutPanel.Controls.Add(this.groupBox5);
+            this.hardwareControllerFlowLayoutPanel.Controls.Add(this.groupBox6);
+            this.hardwareControllerFlowLayoutPanel.Controls.Add(this.groupBox7);
+            this.hardwareControllerFlowLayoutPanel.Controls.Add(this.groupBox8);
+            this.hardwareControllerFlowLayoutPanel.Controls.Add(this.checkBoxShutdownAll);
+            this.hardwareControllerFlowLayoutPanel.Location = new System.Drawing.Point(9, 351);
+            this.hardwareControllerFlowLayoutPanel.Name = "hardwareControllerFlowLayoutPanel";
+            this.hardwareControllerFlowLayoutPanel.Size = new System.Drawing.Size(536, 97);
+            this.hardwareControllerFlowLayoutPanel.TabIndex = 32;
             // 
             // groupBox5
             // 
@@ -373,13 +373,12 @@
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.OnFormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.OnFormClosed);
             this.panel1.ResumeLayout(false);
-            this.panel1.PerformLayout();
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.DataGridViewBitSet)).EndInit();
-            this.flowLayoutPanel6.ResumeLayout(false);
-            this.flowLayoutPanel6.PerformLayout();
+            this.hardwareControllerFlowLayoutPanel.ResumeLayout(false);
+            this.hardwareControllerFlowLayoutPanel.PerformLayout();
             this.groupBox5.ResumeLayout(false);
             this.groupBox5.PerformLayout();
             this.groupBox6.ResumeLayout(false);
@@ -398,7 +397,7 @@
         private System.Windows.Forms.RichTextBox richTextBox1;
         private System.Windows.Forms.DataGridView DataGridViewBitSet;
         private System.Windows.Forms.FlowLayoutPanel hardwareViewerFlowLayoutPanel;
-        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel6;
+        private System.Windows.Forms.FlowLayoutPanel hardwareControllerFlowLayoutPanel;
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.CheckBox checkBoxUnitLamp1;
         private System.Windows.Forms.CheckBox checkBoxUnitFan1;

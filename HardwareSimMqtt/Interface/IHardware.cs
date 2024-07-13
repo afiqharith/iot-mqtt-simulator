@@ -36,7 +36,7 @@ namespace HardwareSimMqtt.Interface
             get;
             set;
         }
-        double AnalogData
+        int AnalogData
         {
             get;
             set;

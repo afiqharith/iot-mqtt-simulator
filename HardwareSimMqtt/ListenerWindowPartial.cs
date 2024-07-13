@@ -1,15 +1,16 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
+﻿using System;
 using System.Text;
-using System.Threading.Tasks;
+using System.Drawing;
+using System.Configuration;
 using System.Windows.Forms;
-using uPLibrary.Networking.M2Mqtt;
-using uPLibrary.Networking.M2Mqtt.Messages;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 using HardwareSimMqtt.Model.BitMap;
+using HardwareSimMqtt.Model.QueryJob;
 using HardwareSimMqtt.Model.DataContainer;
+using uPLibrary.Networking.M2Mqtt.Messages;
+using Newtonsoft.Json;
+using HardwareSimMqtt.EventArgsModel;
 
 namespace ModelInterface
 {
@@ -56,6 +57,9 @@ namespace ModelInterface
             set;
         }
 
+
+        private static event EventHandler<PublishBitInfoToBrokerEventArgs> OnPublishingBitInfoToBroker;
+
         private void InitializeCheckBoxMapping()
         {
             locGroupCheckBoxListUnitCBMap = new Dictionary<CheckBox, UnitCheckBoxList>();
@@ -100,8 +104,7 @@ namespace ModelInterface
                 }
                 groupedUnitCheckBoxList.Add(new UnitCheckBoxList());
             }
-
-
+            
             int nFanId = 0;
             int nLampId = 0;
 
@@ -250,25 +253,29 @@ namespace ModelInterface
                     Encoding.UTF8.GetBytes(jsonifiedBitInfoList),
                     MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
                     true);
-
-                for (int i = 0; i < bitInfoList.Count; i++)
-                {
-                    //Queue HardwareInfoList content to display on UI 
-                    Dictionary<ushort, BitInfo> messageMap = new Dictionary<ushort, BitInfo>();
-                    messageMap.Add(msgID, bitInfoList[i]);
-                    qMsgContentToDisplayOnUI.Enqueue(messageMap);
-
-                    ContollerLogInfo(String.Format(
-                        "ID[{0}] HW state change command sent. HWID: {1}, cmd bit: 0x{2:D4}",
-                        msgID,
-                        bitInfoList[i].Id,
-                        bitInfoList[i].BitState.ToString("X")),
-                        Color.Gray);
-                }
+                OnPublishingBitInfoToBroker.Invoke(null, new PublishBitInfoToBrokerEventArgs(msgID, bitInfoList));
             }
         }
 
-        private void OnMessagePublished(object sender, MqttMsgPublishedEventArgs e)
+        private void OnPublishBitInfoToBroker(object sender, PublishBitInfoToBrokerEventArgs e)
+        {
+            for (int i = 0; i < e.BitInfoList.Count; i++)
+            {
+                //Queue HardwareInfoList content to display on UI 
+                Dictionary<ushort, BitInfo> messageMap = new Dictionary<ushort, BitInfo>();
+                messageMap.Add(e.MessageId, e.BitInfoList[i]);
+                qMsgContentToDisplayOnUI.Enqueue(messageMap);
+
+                ContollerLogInfo(String.Format(
+                    "ID[{0}] HW state change command sent. HWID: {1}, cmd bit: 0x{2:D4}",
+                    e.MessageId,
+                    e.BitInfoList[i].Id,
+                    e.BitInfoList[i].BitState.ToString("X")),
+                    Color.Gray);
+            }
+        }
+
+        public void OnMessagePublished(object sender, MqttMsgPublishedEventArgs e)
         {
             if (e.IsPublished)
             {
@@ -296,52 +303,6 @@ namespace ModelInterface
         private void ContollerLogInfo(string text, Color color)
         {
             SystemHelper.AppendRichTextBox(richTextBox2, text, color);
-        }
-    }
-
-    public class SetBrokerConnectJob
-    {
-        public MqttClient Client
-        {
-            get;
-            set;
-        }
-
-        public string BrokerHostName
-        {
-            get;
-            private set;
-        }
-
-        public SetBrokerConnectJob(string brokerHostName)
-        {
-            this.BrokerHostName = brokerHostName;
-
-            if (this.Client == null)
-            {
-                this.Client = new MqttClient(this.BrokerHostName);
-            }
-        }
-
-        public virtual bool Run()
-        {
-            if(this.Client == null)
-            { 
-                return false; 
-            }
-
-            string guid = Convert.ToString(Guid.NewGuid());
-            bool bSuccess = true;
-            try
-            {
-                this.Client.Connect(guid, "emqx", "public");
-            }
-            catch
-            {
-                bSuccess = false;
-            }
-
-            return bSuccess;
         }
     }
 }

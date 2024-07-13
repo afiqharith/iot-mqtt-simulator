@@ -25,8 +25,15 @@ namespace HardwareSimMqtt.HardwareHub
             private set;
         }
 
-        public HHEmuGPIOController(int ioPort)
+        public virtual eIoType IoType
         {
+            get;
+            private set;
+        }
+
+        public HHEmuGPIOController(eIoType ioType, int ioPort)
+        {
+            this.IoType = ioType;
             this.IoPort = ioPort;
             this.ControllerType = eControllerType.EmuGPIO;
             LibGpio.Gpio.TestMode = true;
@@ -37,29 +44,41 @@ namespace HardwareSimMqtt.HardwareHub
             bool bRet = false;
             try
             {
-                if (true)
+                if (!bRet)
                 {
-                    SetPinOutput(this.IoPort);
+                    if (this.IoType == eIoType.DigitalInput)
+                    {
+                        SetDigitalInput(this.IoPort);
+                        bRet = true;
+                    }
+                    else if (this.IoType == eIoType.DigitalOutput)
+                    {
+                        SetDigitalOutput(this.IoPort);
+                        bRet = true;
+                    }
                 }
             }
             catch
             {
                 throw new Exception(String.Format("Unable to setup GPIO Pin {0}", this.IoPort));
             }
-            return true;
+            return bRet;
         }
 
-        private void SetPinOutput(int pin)
+        //Set digital output pin
+        private void SetDigitalOutput(int pin)
         {
             LibGpio.Gpio.SetupChannel((BroadcomPinNumber)pin, Direction.Output);
         }
 
-        private void SetPinInput(int pin)
+        //Set digital input pin
+        private void SetDigitalInput(int pin)
         {
             LibGpio.Gpio.SetupChannel((BroadcomPinNumber)pin, Direction.Input);
         }
 
-        public void SendDigitalCommand(uint bitState)
+        //Send digital output command
+        public void SendDigitalOutputCommand(uint bitState)
         {
             uint newBitState = this.BitMask & bitState;
             bool trigger = newBitState != 0 ? true : false;
@@ -67,7 +86,17 @@ namespace HardwareSimMqtt.HardwareHub
             Thread.Sleep(10);
         }
 
-        public void SendAnalogCommand(double analogData)
-        { }
+        //Get digital input value
+        public bool GetDigitalInputValue()
+        {
+            return LibGpio.Gpio.ReadValue((BroadcomPinNumber)this.IoPort);
+        }
+
+        public void SendAnalogOutputCommand(int analogData) { }
+
+        public int GetAnalogInputValue() 
+        {
+            return 0;
+        }
     }
 }

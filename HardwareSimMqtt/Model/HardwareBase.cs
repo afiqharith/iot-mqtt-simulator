@@ -16,17 +16,23 @@ namespace HardwareSimMqtt.Model
         GATE,
     }
 
-    public enum eLocation
+    public enum eGroup
     {
+        Non = -1,
+        Group1 = 1,
+        Group2,
+        Group3,
+        Group4,
+
         Area1 = 1,
         Area2,
         Area3,
         Area4,
 
-        Loc1 = Area1,
-        Loc2,
-        Loc3,
-        Loc4
+        Location1 = Area1,
+        Location2,
+        Location3,
+        Location4
     }
 
     public class HardwareBase : IHardware
@@ -44,7 +50,7 @@ namespace HardwareSimMqtt.Model
             protected set;
         }
 
-        public virtual eLocation Location
+        public virtual eGroup Group
         {
             get;
             protected set;
@@ -84,8 +90,8 @@ namespace HardwareSimMqtt.Model
             set => SetCurrentBitStateProperty(ref _bitState, value);
         }
 
-        private double _analogData = -1;
-        public virtual double AnalogData
+        private int _analogData = -1;
+        public virtual int AnalogData
         {
             get => _analogData;
             set => SetAnalogDataProperty(ref _analogData, value);
@@ -98,28 +104,28 @@ namespace HardwareSimMqtt.Model
         }
 
         //Using GPIO
-        public HardwareBase(string id, eBitMask mask, eHardwareType type, eLocation location, int ioPort)
+        public HardwareBase(string id, eBitMask mask, eHardwareType type, eGroup group, eIoType ioType, int ioPort)
         {
 #if !SIMULATE
-            this.ComController = new HHGPIOController(ioPort);
+            this.ComController = new HHGPIOController(ioType, ioPort);
 #else
-            this.ComController = new HHEmuGPIOController(ioPort);
+            this.ComController = new HHEmuGPIOController(ioType, ioPort);
 #endif
             this.Type = type;
-            this.Location = location;
+            this.Group = group;
             this.Id = id;
             this.BitMask = (uint)mask;
 
         }
 
         //Using SerialPort
-        public HardwareBase(string id, eBitMask mask, eHardwareType type, eLocation location, string portName, int baudRate = 9600)
+        public HardwareBase(string id, eBitMask mask, eHardwareType type, eGroup group, eIoType ioType, string portName, int baudRate = 9600)
         {
-            this.ComController = new HHSerialPortController(portName, baudRate);
+            this.ComController = new HHSerialPortController(ioType, portName, baudRate);
             this.Id = id;
             this.BitMask = (uint)mask;
             this.Type = type;
-            this.Location = location;
+            this.Group = group;
         }
 
         private void SetIdProperty(ref string id, string newval)
@@ -157,15 +163,15 @@ namespace HardwareSimMqtt.Model
         private void SetCurrentBitStateProperty(ref uint bitState, uint newval)
         {
             bitState = newval;
-            this.ComController.SendDigitalCommand(this.BitState);
+            this.ComController.SendDigitalOutputCommand(this.BitState);
             this.IsOn = GetNewBitStateValue(this.BitState) == this.BitMask;
             this.IsOff = !this.IsOn;
         }
 
-        private void SetAnalogDataProperty(ref double data, double newval)
+        private void SetAnalogDataProperty(ref int data, int newval)
         {
             data = newval;
-            this.ComController.SendAnalogCommand(data);
+            this.ComController.SendAnalogOutputCommand(data);
         }
 
         public virtual uint GetNewBitStateValue(uint newBitState) => this.BitMask & newBitState;

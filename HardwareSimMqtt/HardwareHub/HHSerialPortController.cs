@@ -38,9 +38,15 @@ namespace HardwareSimMqtt.HardwareHub
             get;
             private set;
         }
-
-        public HHSerialPortController(string portName, int baudRate)
+        public virtual eIoType IoType
         {
+            get;
+            private set;
+        }
+
+        public HHSerialPortController(eIoType ioType, string portName, int baudRate)
+        {
+            this.IoType = ioType;
             this.ControllerType = eControllerType.SerialPort;
             this.PortName = portName;
             this.BaudRate = baudRate;
@@ -76,7 +82,8 @@ namespace HardwareSimMqtt.HardwareHub
             return bRet;
         }
 
-        public void SendDigitalCommand(uint bitState)
+        //Send digital output command
+        public void SendDigitalOutputCommand(uint bitState)
         {
             if (serialPort.IsOpen)
             {
@@ -85,8 +92,24 @@ namespace HardwareSimMqtt.HardwareHub
             }
         }
 
-        public void SendAnalogCommand(double analogData)
-        { }
+        //Get digital input value
+        public bool GetDigitalInputValue()
+        {
+            int ret = 0;
+            if (serialPort.IsOpen)
+            {
+                //ret = serialPort.Read();
+            }
+
+            return ret != 0;
+        }
+
+        public void SendAnalogOutputCommand(int analogData) { }
+
+        public int GetAnalogInputValue()
+        {
+            return 0;
+        }
 
         public void OnSerialDataReceived(object sender, SerialDataReceivedEventArgs e)
         {

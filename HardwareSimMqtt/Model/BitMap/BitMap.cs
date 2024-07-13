@@ -16,5 +16,14 @@ namespace HardwareSimMqtt.Model.BitMap
         Bit5 = 1 << 5, //0x0032 //Lamp2
         Bit6 = 1 << 6, //0x0064 //Lamp3
         Bit7 = 1 << 7, //0x0128 //Lamp4
+        Bit8 = 1 << 8,
+        Bit9 = 1 << 9,
+        Bit10 = 1 << 10,
+        Bit11 = 1 << 11,
+        Bit12 = 1 << 12,
+        Bit13 = 1 << 13,
+        Bit14 = 1 << 14,
+        Bit15 = 1 << 15,
+        Bit16 = 1 << 16,
     }
 }

@@ -21,13 +21,13 @@ namespace HardwareSimMqtt.Model.DataContainer
             set;
         }
 
-        public double AnalogData
+        public int AnalogData
         {
             get;
             set;
         }
 
-        public BitInfo(string id, uint currentBitState = 0, double analogData = -1)
+        public BitInfo(string id, uint currentBitState = 0, int analogData = -1)
         {
             this.Id = id;
             this.BitState = currentBitState;
