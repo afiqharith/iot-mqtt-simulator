@@ -6,15 +6,15 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace HardwareSimMqtt
+namespace ModelInterface
 {
     public static class SystemHelper
     {
-        public static void AppendRTBText(RichTextBox textbox, string text, Color color)
+        public static void AppendRichTextBox(RichTextBox textbox, string text, Color color)
         {
             if (textbox.InvokeRequired)
             {
-                Action safeThread = delegate { SystemHelper.AppendRTBText(textbox, text, color); };
+                Action safeThread = delegate { SystemHelper.AppendRichTextBox(textbox, text, color); };
                 textbox.Invoke(safeThread);
             }
             else

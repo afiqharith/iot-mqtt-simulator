@@ -1,8 +1,10 @@
 ﻿using System.Windows.Forms;
 using System.Drawing;
-using BitMap;
+using HardwareSimMqtt.Model.BitMap;
+using HardwareSimMqtt.UIComponent;
+using HardwareSimMqtt.HardwareHub;
 
-namespace Model
+namespace HardwareSimMqtt.Model
 {
     internal class SimLamp : HardwareBase
     {
@@ -13,29 +15,43 @@ namespace Model
             set => SetPanelProperty(ref _pPanel, value);
         }
 
+        private HardwareViewerGroup hardwareViewer { get; set; }
+
         public override uint BitState
         {
             set
             {
                 base.BitState = value;
-                this.pPanel.BackColor = GetUiBackColorIndicator(value);
+                if (this.pPanel != null)
+                {
+                    this.pPanel.BackColor = GetUiBackColorIndicator(this.IsOn);
+                }
+
+                if (this.hardwareViewer != null)
+                {
+                    this.hardwareViewer.ToggleUiLamp(this.IsOn);
+                }
             }
         }
 
-        public SimLamp(Panel panel, eLOC location, string id, eBitMask mask, int ioPort)
-            : base(eTYPE.LAMP, location, id, mask, ioPort)
+        public SimLamp(string id, eBitMask mask, eGroup location, eIoType ioType, int ioPort)
+            : base(id, mask, eHardwareType.LAMP, location, ioType, ioPort) { }
+
+        public SimLamp(string id, eBitMask mask, eGroup location, eIoType ioType, string portName, int baudRate)
+            : base(id, mask, eHardwareType.LAMP, location, ioType, portName, baudRate) { }
+
+        private void SetPanelProperty(ref Panel panel, Panel newval) => panel = newval;
+
+        public void BindWithUIComponent(Panel panel)
         {
             this.pPanel = panel;
         }
 
-        private void SetPanelProperty(ref Panel panel, Panel newval)
+        public void BindWithUiComponent(HardwareViewerGroup hardwareViewer)
         {
-            panel = newval;
+            this.hardwareViewer = hardwareViewer;
         }
 
-        private Color GetUiBackColorIndicator(uint bit)
-        {
-            return (bit & this.BitMask) == this.BitMask ? Color.Green : Color.Gray;
-        }
+        private Color GetUiBackColorIndicator(bool isOn) => isOn ? Color.Green : Color.Gray;
     }
 }

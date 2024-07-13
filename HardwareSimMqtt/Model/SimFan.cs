@@ -1,8 +1,10 @@
 ﻿using System.Windows.Forms;
 using System.Drawing;
-using BitMap;
+using HardwareSimMqtt.Model.BitMap;
+using HardwareSimMqtt.UIComponent;
+using HardwareSimMqtt.HardwareHub;
 
-namespace Model
+namespace HardwareSimMqtt.Model
 {
     internal class SimFan : HardwareBase
     {
@@ -13,42 +15,56 @@ namespace Model
             set => SetPanelProperty(ref _pPanel, value);
         }
 
+        private HardwareViewerGroup hardwareViewer { get; set; }
+
         public override uint BitState
         {
             set
             {
                 base.BitState = value;
-                this.pPanel.BackColor = GetUiBackColorIndicator(value);
+                if (this.pPanel != null)
+                {
+                    this.pPanel.BackColor = GetUiBackColorIndicator(this.IsOn);
+                }
+
+                if (this.hardwareViewer != null)
+                {
+                    this.hardwareViewer.ToggleUiFan(this.IsOn);
+                }
             }
         }
 
-        private double _speed = -1;
-        public virtual double Speed
+        private int _speed = -1;
+        public virtual int Speed
         {
             get => _speed;
             protected set => SetSpeedProperty(ref _speed, value);
         }
 
-        public SimFan(Panel panel, eLOC location, string id, eBitMask mask, int ioPort)
-            : base(eTYPE.FAN, location, id, mask, ioPort)
-        {
-            this.pPanel = panel;
-        }
+        public SimFan(string id, eBitMask mask, eGroup group, eIoType ioType, int ioPort)
+            : base(id, mask, eHardwareType.FAN, group, ioType, ioPort) { }
 
-        private void SetPanelProperty(ref Panel panel, Panel newval)
-        {
-            panel = newval;
-        }
+        public SimFan(string id, eBitMask mask, eGroup group, eIoType ioType, string portName, int baudRate)
+            : base(id, mask, eHardwareType.FAN, group, ioType, portName, baudRate) { }
 
-        private void SetSpeedProperty(ref double speed, double newval)
+        private void SetPanelProperty(ref Panel panel, Panel newval) => panel = newval;
+
+        private void SetSpeedProperty(ref int speed, int newval)
         {
             speed = newval;
             base.AnalogData = newval;
         }
 
-        private Color GetUiBackColorIndicator(uint bit)
+        public void BindWithUIComponent(Panel panel)
         {
-            return (bit & this.BitMask) == this.BitMask ? Color.Green : Color.Gray;
+            this.pPanel = panel;
         }
+
+        public void BindWithUiComponent(HardwareViewerGroup hardwareViewer)
+        {
+            this.hardwareViewer = hardwareViewer;
+        }
+
+        private Color GetUiBackColorIndicator(bool isOn) => isOn ? Color.Green : Color.Gray;
     }
 }

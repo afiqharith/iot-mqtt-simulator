@@ -1,28 +1,14 @@
-﻿using System;
+﻿#define SIMULATE
+using System;
+using System.Diagnostics;
+using System.Threading;
+using HardwareSimMqtt.Model.BitMap;
+using HardwareSimMqtt.Interface;
+using HardwareSimMqtt.HardwareHub;
 
-namespace BitMap
+namespace HardwareSimMqtt.Model
 {
-    public enum eBitMask
-    {
-        Bit0 = 1 << 0, //0x0001 //Fan1
-        Bit1 = 1 << 1, //0x0002 //Fan2
-        Bit2 = 1 << 2, //0x0004 //Fan3
-        Bit3 = 1 << 3, //0x0008 //Fan4
-        Bit4 = 1 << 4, //0x0016 //Lamp1
-        Bit5 = 1 << 5, //0x0032 //Lamp2
-        Bit6 = 1 << 6, //0x0064 //Lamp3
-        Bit7 = 1 << 7, //0x0128 //Lamp4
-    }
-}
-
-namespace Model
-{
-    using BitMap;
-    using System.Diagnostics;
-    using System.Threading;
-    using HardwareMap;
-
-    public enum eTYPE
+    public enum eHardwareType
     {
         LAMP,
         FAN,
@@ -30,40 +16,30 @@ namespace Model
         GATE,
     }
 
-    public enum eLOC
+    public enum eGroup
     {
-        Area1,
+        Non = -1,
+        Group1 = 1,
+        Group2,
+        Group3,
+        Group4,
+        Group5,
+        Group6,
+        Group7,
+        Group8,
+
+        Area1 = Group1,
         Area2,
         Area3,
         Area4,
 
-        Loc1 = Area1,
-        Loc2,
-        Loc3,
-        Loc4
+        Location1 = Area1,
+        Location2,
+        Location3,
+        Location4
     }
 
-    public interface IHardware
-    {
-        string Id 
-        { 
-            get; 
-        }
-
-        uint BitState 
-        { 
-            get; 
-            set; 
-        }
-
-        double AnalogData
-        {
-            get;
-            set;
-        }
-    }
-
-    public class HardwareBase : HHGeneralPurposeIO, IHardware
+    public class HardwareBase : IHardware
     {
         private string _id;
         public virtual string Id
@@ -72,22 +48,34 @@ namespace Model
             protected set => SetIdProperty(ref _id, value);
         }
 
-        public virtual eTYPE Type
+        public virtual eHardwareType Type
         {
             get;
             protected set;
         }
 
-        public virtual eLOC Location
+        public virtual eGroup Group
         {
             get;
             protected set;
         }
 
-        public bool IsConnected
+        public virtual bool IsConnected
         {
             get;
             protected set;
+        }
+
+        public virtual bool IsOn
+        {
+            get;
+            private set;
+        }
+
+        public virtual bool IsOff
+        {
+            get;
+            private set;
         }
 
         // Bit index for the hardware, bit map
@@ -106,20 +94,42 @@ namespace Model
             set => SetCurrentBitStateProperty(ref _bitState, value);
         }
 
-        private double _analogData = -1;
-        public virtual double AnalogData
+        private int _analogData = -1;
+        public virtual int AnalogData
         {
             get => _analogData;
             set => SetAnalogDataProperty(ref _analogData, value);
         }
 
-        public HardwareBase(eTYPE type, eLOC location, string id, eBitMask mask, int ioPort) 
-            : /*base("COM12", 9600)*/base(ioPort)
+        private IComController ComController
         {
+            get;
+            set;
+        }
+
+        //Using GPIO
+        public HardwareBase(string id, eBitMask mask, eHardwareType type, eGroup group, eIoType ioType, int ioPort)
+        {
+#if !SIMULATE
+            this.ComController = new HHGPIOController(ioType, ioPort);
+#else
+            this.ComController = new HHEmuGPIOController(ioType, ioPort);
+#endif
             this.Type = type;
-            this.Location = location;
+            this.Group = group;
             this.Id = id;
             this.BitMask = (uint)mask;
+
+        }
+
+        //Using SerialPort
+        public HardwareBase(string id, eBitMask mask, eHardwareType type, eGroup group, eIoType ioType, string portName, int baudRate = 9600)
+        {
+            this.ComController = new HHSerialPortController(ioType, portName, baudRate);
+            this.Id = id;
+            this.BitMask = (uint)mask;
+            this.Type = type;
+            this.Group = group;
         }
 
         private void SetIdProperty(ref string id, string newval)
@@ -127,13 +137,21 @@ namespace Model
             string createdId = String.Empty;
             switch (this.Type)
             {
-                case eTYPE.FAN:
-                    createdId = String.Format("F_ID{0}", newval);
+                default:
+                case eHardwareType.LAMP:
+                    createdId = String.Format("HWLID{0}", newval);
                     break;
 
-                default:
-                case eTYPE.LAMP:
-                    createdId = String.Format("L_ID{0}", newval);
+                case eHardwareType.FAN:
+                    createdId = String.Format("HWFID{0}", newval);
+                    break;
+
+                case eHardwareType.AIR_CONDITIONER:
+                    createdId = String.Format("HWACID{0}", newval);
+                    break;
+
+                case eHardwareType.GATE:
+                    createdId = String.Format("HWGID{0}", newval);
                     break;
             }
             id = createdId;
@@ -143,31 +161,40 @@ namespace Model
         {
             bitMask = newval;
             //Map with hardware bit
-            base.BitMask = newval;
+            this.ComController.BitMask = newval;
         }
 
         private void SetCurrentBitStateProperty(ref uint bitState, uint newval)
         {
             bitState = newval;
-            base.SendPacket(bitState);
+            this.ComController.SendDigitalOutputCommand(this.BitState);
+            this.IsOn = GetNewBitStateValue(this.BitState) == this.BitMask;
+            this.IsOff = !this.IsOn;
         }
 
-        private void SetAnalogDataProperty(ref double data, double newval)
+        private void SetAnalogDataProperty(ref int data, int newval)
         {
             data = newval;
+            this.ComController.SendAnalogOutputCommand(data);
         }
+
+        public virtual uint GetNewBitStateValue(uint newBitState) => this.BitMask & newBitState;
+
+        public virtual void On() => this.BitState = GetNewBitStateValue(this.BitMask);
+
+        public virtual void Off() => this.BitState = GetNewBitStateValue(~this.BitMask);
 
         public virtual bool Connect()
         {
             int iAttempt = 0;
             int elapsedTime = 0;
             int timeStart = Environment.TickCount;
-            while (!IsConnected && iAttempt < 3)
+            while (!this.IsConnected && iAttempt < 3)
             {
                 try
                 {
-                    //Create HW bit map connection here
-                    this.IsConnected = base.OpenPort();
+                    //Attempt hardware connection here
+                    this.IsConnected = this.ComController.OpenPort();
                 }
                 catch
                 {
