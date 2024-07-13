@@ -23,8 +23,12 @@ namespace HardwareSimMqtt.Model
         Group2,
         Group3,
         Group4,
+        Group5,
+        Group6,
+        Group7,
+        Group8,
 
-        Area1 = 1,
+        Area1 = Group1,
         Area2,
         Area3,
         Area4,

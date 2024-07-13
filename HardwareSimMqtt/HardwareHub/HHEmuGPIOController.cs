@@ -89,12 +89,13 @@ namespace HardwareSimMqtt.HardwareHub
         //Get digital input value
         public bool GetDigitalInputValue()
         {
+            if (this.IoPort == -1) { return false; }
             return LibGpio.Gpio.ReadValue((BroadcomPinNumber)this.IoPort);
         }
 
         public void SendAnalogOutputCommand(int analogData) { }
 
-        public int GetAnalogInputValue() 
+        public int GetAnalogInputValue()
         {
             return 0;
         }

@@ -122,6 +122,32 @@ namespace HardwareSimMqtt.UIComponent
             PublishBitInfoToBroker(bitInfoList);
         }
 
+        public void CheckboxAll_OnCheckStateChanged(object sender, EventArgs e)
+        {
+            CheckBox checkbox = (CheckBox)sender;
+            if (checkbox.CheckState == CheckState.Indeterminate)
+            {
+                return;
+            }
+
+            List<BitInfo> bitInfoList = new List<BitInfo>();
+
+            foreach (KeyValuePair<CheckBox, eBitMask> kvp in checkBoxMaskMap)
+            {
+                kvp.Key.CheckStateChanged -= new EventHandler(CheckboxUnit_OnCheckStateChanged);
+                kvp.Key.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
+                kvp.Key.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
+
+                uint bitState = checkbox.Checked ? (uint)checkBoxMaskMap[kvp.Key] : ((uint)checkBoxMaskMap[kvp.Key] & (uint)~checkBoxMaskMap[kvp.Key]);
+                bitInfoList.Add(new BitInfo((string)kvp.Key.Tag, bitState));
+            }
+            this.CheckBoxBoth.CheckStateChanged -= new EventHandler(CheckboxBoth_OnCheckStateChanged);
+            this.CheckBoxBoth.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
+            this.CheckBoxBoth.CheckStateChanged += new EventHandler(CheckboxBoth_OnCheckStateChanged);
+
+            PublishBitInfoToBroker(bitInfoList);
+        }
+
         private void PublishBitInfoToBroker(List<BitInfo> bitInfoList)
         {
             string jsonifiedBitInfoList = JsonConvert.SerializeObject(new JsonBitInfoList(bitInfoList));
