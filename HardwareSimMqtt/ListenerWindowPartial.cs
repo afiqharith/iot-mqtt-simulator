@@ -40,7 +40,7 @@ namespace ModelInterface
         }
 
 
-        private static event EventHandler<PublishBitInfoToBrokerEventArgs> OnPublishingBitInfoToBroker;
+        private event EventHandler<PublishBitInfoToBrokerEventArgs> OnPublishingBitInfoToBroker;
 
         private void OnPublishBitInfoToBroker(object sender, PublishBitInfoToBrokerEventArgs e)
         {

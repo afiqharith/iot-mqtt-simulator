@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using PiSharp.LibGpio;
 using PiSharp.LibGpio.Entities;
@@ -13,10 +14,21 @@ namespace HardwareSimMqtt.HardwareHub
             set;
         }
 
+        private int _ioPort;
         private int IoPort
         {
-            get;
-            set;
+            get => _ioPort;
+            set
+            {
+                if (value != -1)
+                {
+                    _ioPort = value;
+                }
+                else
+                {
+                    throw new Exception(String.Format("Invalid I/O port number: {0}", value));
+                }
+            }
         }
 
         public virtual eControllerType ControllerType
@@ -60,7 +72,9 @@ namespace HardwareSimMqtt.HardwareHub
             }
             catch
             {
-                throw new Exception(String.Format("Unable to setup GPIO Pin {0}", this.IoPort));
+                String strException = String.Format("Unable to setup GPIO Pin {0}", this.IoPort);
+                Debug.WriteLine(strException);
+                throw new Exception(strException);
             }
             return bRet;
         }
@@ -89,7 +103,6 @@ namespace HardwareSimMqtt.HardwareHub
         //Get digital input value
         public bool GetDigitalInputValue()
         {
-            if (this.IoPort == -1) { return false; }
             return LibGpio.Gpio.ReadValue((BroadcomPinNumber)this.IoPort);
         }
 

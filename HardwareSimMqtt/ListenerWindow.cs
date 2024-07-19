@@ -18,6 +18,8 @@ using System.Configuration;
 using HardwareSimMqtt.HardwareHub;
 using HardwareSimMqtt.UIComponent;
 using HardwareSimMqtt.EventArgsModel;
+using System.Xml;
+using System.IO;
 
 namespace ModelInterface
 {
@@ -226,6 +228,7 @@ namespace ModelInterface
 
         private void OnSystemTimerTick(object sender, EventArgs e)
         {
+
             if (!isPowerUpFinish)
                 PowerUpOperation();
             else
@@ -274,7 +277,6 @@ namespace ModelInterface
             int totalPort = Convert.ToInt32(ConfigurationManager.AppSettings.Get("TotalIO"));
             int totalInput = Convert.ToInt32(ConfigurationManager.AppSettings.Get("TotalInput"));
             int totalOutput = Convert.ToInt32(ConfigurationManager.AppSettings.Get("TotalOutput"));
-
             Dictionary<eGroup, HardwareViewerGroup> hardwareViewerMap = new Dictionary<eGroup, HardwareViewerGroup>();
             Dictionary<eGroup, HardwareControllerGroup> hardwareControllerMap = new Dictionary<eGroup, HardwareControllerGroup>();
 
@@ -405,6 +407,178 @@ namespace ModelInterface
             }
         }
 
+        private void InitializeHardwareBitMap1()
+        {
+            simHardwareMap = new Dictionary<uint, HardwareBase>();
+
+            Dictionary<eGroup, HardwareViewerGroup> hardwareViewerMap = new Dictionary<eGroup, HardwareViewerGroup>();
+            Dictionary<eGroup, HardwareControllerGroup> hardwareControllerMap = new Dictionary<eGroup, HardwareControllerGroup>();
+
+            string xmlFilePath = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), ConfigurationManager.AppSettings.Get("ConfigMap"));
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load(xmlFilePath);
+            XmlNodeList settings = xmlDoc.SelectNodes("/configuration/bitmap/setting");
+
+            for (int i = 0; i < settings.Count; i++)
+            {
+                int bit = Convert.ToInt32(settings[i].Attributes["bit"].Value);
+                eBitMask ebitMask = (eBitMask)(1 << bit);
+
+                XmlNodeList details = settings[i].SelectNodes("detail");
+
+                if(details.Count != 0)
+                {
+                    int ioPort = new int();
+                    eIoType ioType = new eIoType();
+                    eControllerType econtrollerType = new eControllerType();
+                    eHardwareType ehardwaretype = new eHardwareType();
+                    eGroup egroup = new eGroup();
+                    string id = String.Empty;
+                    for (int j = 0; j < details.Count; j++)
+                    {
+                        if (details[j].Attributes["name"].Value == "IOPort")
+                        {
+                            ioPort = Convert.ToInt32(details[j].Attributes["value"].Value);
+                        }
+                        else if (details[j].Attributes["name"].Value == "IOType")
+                        {
+                            ioType = (eIoType)Convert.ToInt32(details[j].Attributes["value"].Value);
+                        }
+                        else if (details[j].Attributes["name"].Value == "HardwareType")
+                        {
+                            ehardwaretype = (eHardwareType)Convert.ToInt32(details[j].Attributes["value"].Value);
+                        }
+                        else if (details[j].Attributes["name"].Value == "ControllerType")
+                        {
+                            econtrollerType = (eControllerType)Convert.ToInt32(details[j].Attributes["value"].Value);
+                        }
+                        else if (details[j].Attributes["name"].Value == "Group")
+                        {
+                            egroup = (eGroup)Convert.ToInt32(details[j].Attributes["value"].Value);
+                            id = Convert.ToString((int)egroup);
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+
+                    HardwareBase simHardware;
+                    if (econtrollerType == eControllerType.GPIO)
+                    {
+                        //int ioPort = Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_IOPort", i)));
+
+                        if (ehardwaretype == eHardwareType.LAMP)
+                        {
+                            simHardware = new SimLamp(id, ebitMask, egroup, ioType, ioPort);
+                        }
+                        else if (ehardwaretype == eHardwareType.FAN)
+                        {
+                            simHardware = new SimFan(id, ebitMask, egroup, ioType, ioPort);
+                        }
+                        else
+                        {
+                            simHardware = new HardwareBase(id, ebitMask, ehardwaretype, egroup, ioType, ioPort);
+                        }
+                    }
+                    else if (econtrollerType == eControllerType.SerialPort)
+                    {
+                        string comPort = ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_COMPort", i));
+                        int baudRate = Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_BaudRate", i)));
+                        if (ehardwaretype == eHardwareType.LAMP)
+                        {
+                            simHardware = new SimLamp(id, ebitMask, egroup, ioType, comPort, baudRate);
+                        }
+                        else if (ehardwaretype == eHardwareType.FAN)
+                        {
+                            simHardware = new SimFan(id, ebitMask, egroup, ioType, comPort, baudRate);
+                        }
+                        else
+                        {
+                            simHardware = new HardwareBase(id, ebitMask, ehardwaretype, egroup, ioType, comPort, baudRate);
+                        }
+                    }
+                    else
+                    {
+                        continue;
+                    }
+
+                    //Hardware viewer
+                    if (egroup != eGroup.Non &&
+                        (!hardwareViewerMap.ContainsKey(egroup) || hardwareViewerMap[egroup] == null))
+                    {
+                        hardwareViewerMap[egroup] = new HardwareViewerGroup(egroup);
+                    }
+                    else
+                    {
+                        //unit hardware viewer
+                    }
+
+                    //Hardware Controller
+                    if (egroup != eGroup.Non &&
+                        (!hardwareControllerMap.ContainsKey(egroup) || hardwareControllerMap[egroup] == null))
+                    {
+                        hardwareControllerMap[egroup] = new HardwareControllerGroup(egroup, controllerBrokerConnectJob, OnPublishingBitInfoToBroker);
+                    }
+                    else
+                    {
+                        //unit hardware controller
+                    }
+
+                    if (simHardware != null)
+                    {
+                        Type hwType = simHardware.GetType();
+                        if (egroup != eGroup.Non)
+                        {
+                            if (hwType == typeof(SimLamp))
+                            {
+                                hardwareViewerMap[egroup].BindLampId(simHardware.Id);
+                                hardwareControllerMap[egroup].BindCheckboxLampId(simHardware.Id, (eBitMask)simHardware.BitMask);
+                                ((SimLamp)simHardware).BindWithUiComponent(hardwareViewerMap[egroup]);
+                            }
+                            else if (hwType == typeof(SimFan))
+                            {
+                                hardwareViewerMap[egroup].BindFanId(simHardware.Id);
+                                hardwareControllerMap[egroup].BindCheckboxFanId(simHardware.Id, (eBitMask)simHardware.BitMask);
+                                ((SimFan)simHardware).BindWithUiComponent(hardwareViewerMap[egroup]);
+                            }
+                        }
+                        simHardwareMap.Add(Convert.ToUInt32(bit), simHardware);
+                    }
+                }
+
+            }
+
+            //Hardware Viewer
+            foreach (KeyValuePair<eGroup, HardwareViewerGroup> kvp in hardwareViewerMap)
+            {
+                hardwareViewerFlowLayoutPanel.Controls.Add(kvp.Value);
+            }
+
+            //Hardware Controller
+            CheckBox checkboxAll = new CheckBox
+            {
+                Text = "All",
+                AutoSize = true
+            };
+
+            foreach (KeyValuePair<eGroup, HardwareControllerGroup> kvp in hardwareControllerMap)
+            {
+                checkboxAll.CheckStateChanged += new EventHandler(kvp.Value.CheckboxAll_OnCheckStateChanged);
+                hardwareControllerFlowLayoutPanel.Controls.Add(kvp.Value);
+            }
+            hardwareControllerFlowLayoutPanel.Controls.Add(checkboxAll);
+
+            //Do connection attempt
+            foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+            {
+                if (!kvp.Value.IsConnected)
+                {
+                    kvp.Value.Connect();
+                }
+            }
+        }
+
         private void InitializeBitSetDgv()
         {
             bitSetDataTable = new DataTable();
@@ -451,7 +625,7 @@ namespace ModelInterface
                     break;
 
                 case STATE.PU_INIT_SIM_HARDWARE_INSTANCE:
-                    InitializeHardwareBitMap();
+                    InitializeHardwareBitMap1();
                     iAutoNextStep = STATE.PU_SET_SIM_HARDWARE_INIT_STATE;
                     break;
 

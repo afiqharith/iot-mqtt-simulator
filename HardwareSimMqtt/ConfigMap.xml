@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+	<bitmap>
+		<setting node="0" bit="0" address="1:25">
+			<detail name="IOPort" value="25"/>
+			<detail name="IOType" value="1"/>
+			<detail name="HardwareType" value="1"/>
+			<detail name="ControllerType" value="0"/>
+			<detail name="Group" value="1"/>
+		</setting>
+		<setting node="0" bit="1" address="2:24" >
+			<detail name="IOPort" value="24"/>
+			<detail name="IOType" value="1"/>
+			<detail name="HardwareType" value="1"/>
+			<detail name="ControllerType" value="0"/>
+			<detail name="Group" value="2"/>
+		</setting>
+		<setting node="0" bit="2" address="3:23">
+			<detail name="IOPort" value="23"/>
+			<detail name="IOType" value="1"/>
+			<detail name="HardwareType" value="1"/>
+			<detail name="ControllerType" value="0"/>
+			<detail name="Group" value="3"/>
+		</setting>
+		<setting node="0" bit="3" address="4:22">
+			<detail name="IOPort" value="22"/>
+			<detail name="IOType" value="1"/>
+			<detail name="HardwareType" value="1"/>
+			<detail name="ControllerType" value="0"/>
+			<detail name="Group" value="4"/>
+		</setting>
+		<setting node="0" bit="4" address="1:21">
+			<detail name="IOPort" value="21"/>
+			<detail name="IOType" value="1"/>
+			<detail name="HardwareType" value="0"/>
+			<detail name="ControllerType" value="0"/>
+			<detail name="Group" value="1"/>
+		</setting>
+		<setting node="0" bit="5" address="2:18">
+			<detail name="IOPort" value="18"/>
+			<detail name="IOType" value="1"/>
+			<detail name="HardwareType" value="0"/>
+			<detail name="ControllerType" value="0"/>
+			<detail name="Group" value="2"/>
+		</setting>
+		<setting node="0" bit="6" address="3:17">
+			<detail name="IOPort" value="17"/>
+			<detail name="IOType" value="1"/>
+			<detail name="HardwareType" value="0"/>
+			<detail name="ControllerType" value="0"/>
+			<detail name="Group" value="3"/>
+		</setting>
+		<setting node="0" bit="7" address="4:4">
+			<detail name="IOPort" value="4"/>
+			<detail name="IOType" value="1"/>
+			<detail name="HardwareType" value="0"/>
+			<detail name="ControllerType" value="0"/>
+			<detail name="Group" value="4"/>
+		</setting>
+		<setting node="0" bit="8" address="5:25">
+			<detail name="IOPort" value="25"/>
+			<detail name="IOType" value="1"/>
+			<detail name="HardwareType" value="1"/>
+			<detail name="ControllerType" value="0"/>
+			<detail name="Group" value="5"/>
+		</setting>
+		<setting node="0" bit="9" address="5:4">
+			<detail name="IOPort" value="4"/>
+			<detail name="IOType" value="1"/>
+			<detail name="HardwareType" value="0"/>
+			<detail name="ControllerType" value="0"/>
+			<detail name="Group" value="5"/>
+		</setting>
+	</bitmap>
+</configuration>
