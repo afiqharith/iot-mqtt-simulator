@@ -8,12 +8,11 @@ using System.Threading.Tasks;
 
 namespace HardwareSimMqtt.Model.QueryJob
 {
-    public class MonitorJobThread
+    public class MonitorTaskThread
     {
-        public Queue<IJob> QueuedJob
+        public PriorityQueue<IJob> QueuedJob
         {
             get;
-            set;
         }
 
         public Dictionary<uint, HardwareBase> HardwareMap
@@ -28,51 +27,35 @@ namespace HardwareSimMqtt.Model.QueryJob
             set;
         }
 
-        public MonitorJobThread(Dictionary<uint, HardwareBase> hardwareMap)
+        public MonitorTaskThread(Dictionary<uint, HardwareBase> hardwareMap)
         {
-            this.QueuedJob = new Queue<IJob>();
+            this.QueuedJob = new PriorityQueue<IJob>();
             this.HardwareMap = hardwareMap;
+            InitializeThread();
+        }
 
+        public MonitorTaskThread()
+        {
+            this.QueuedJob = new PriorityQueue<IJob>();
+            InitializeThread();
+        }
+
+        private void InitializeThread()
+        {
             monitorJobQueryThread = new Thread(new ThreadStart(MonitorJobQuery));
             if (!monitorJobQueryThread.IsAlive)
             {
                 monitorJobQueryThread.Start();
             }
-        }
-
-        public MonitorJobThread()
-        {
-            this.QueuedJob = new Queue<IJob>();
-
-            monitorJobQueryThread = new Thread(new ThreadStart(MonitorJobQuery));
-            if (!monitorJobQueryThread.IsAlive)
-            {
-                monitorJobQueryThread.Start();
-            }
-        }
-
-        public void EnqueueJob(IJob job)
-        {
-            this.QueuedJob.Enqueue(job);
-        }
-
-        public IJob DequeueJob()
-        {
-            IJob job = null;
-            if(this.QueuedJob.Count > 0)
-            {
-                job = this.QueuedJob.Dequeue();
-            }
-            return job;
         }
 
         public void MonitorJobQuery()
         {
             while (true)
             {
-                while (this.QueuedJob.Count > 0)
+                while (QueuedJob.Count > 0)
                 {
-                    IJob taskJob = DequeueJob();
+                    IJob taskJob = QueuedJob.Dequeue();
 
                     if (taskJob != null)
                     {
@@ -86,7 +69,7 @@ namespace HardwareSimMqtt.Model.QueryJob
                                     if (kvp.Value.Id == setHardwareStateJob.Hardware.Id)
                                     {
                                         setHardwareStateJob.Run();
-                                        EnqueueJob(new ReadHardwareStateJob(kvp.Value));
+                                        QueuedJob.Enqueue(new ReadHardwareStateJob(kvp.Value), 3);
                                     }
                                 }
                             }

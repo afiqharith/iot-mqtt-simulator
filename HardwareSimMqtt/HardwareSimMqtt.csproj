@@ -122,7 +122,8 @@
     <Compile Include="Model\BitMap\BitMap.cs" />
     <Compile Include="Model\DataContainer\BitInfo.cs" />
     <Compile Include="Model\DataContainer\JsonBitInfoList.cs" />
-    <Compile Include="Model\QueryJob\MonitorJobThread.cs" />
+    <Compile Include="Model\QueryJob\MonitorTaskThread.cs" />
+    <Compile Include="Model\QueryJob\PriorityQueue.cs" />
     <Compile Include="Model\QueryJob\ReadHardwareStateJob.cs" />
     <Compile Include="Model\QueryJob\SetBrokerConnectJob.cs" />
     <Compile Include="Model\QueryJob\SetHardwareStateJob.cs" />

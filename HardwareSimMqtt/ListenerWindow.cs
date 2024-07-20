@@ -1,4 +1,4 @@
-﻿//#define USETHREAD
+﻿#define USETHREAD
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -20,6 +20,7 @@ using HardwareSimMqtt.UIComponent;
 using HardwareSimMqtt.EventArgsModel;
 using System.Xml;
 using System.IO;
+using System.Diagnostics;
 
 namespace HardwareSimMqtt
 {
@@ -69,11 +70,13 @@ namespace HardwareSimMqtt
             set;
         }
 
+#if !USETHREAD
         private Queue<IJob> queriedJob
         {
             get;
             set;
         }
+#endif
 
         protected Dictionary<uint, HardwareBase> simHardwareMap
         {
@@ -110,7 +113,7 @@ namespace HardwareSimMqtt
             get => _iAutoNextStep;
             set
             {
-                if (iLastSwitchStep != value)
+                if (value != iLastSwitchStep)
                 {
                     autoStepChanged.Invoke(this, new AutoStepChangeEventArgs(_iAutoNextStep, value));
                     _iAutoNextStep = value;
@@ -133,9 +136,7 @@ namespace HardwareSimMqtt
 
         private enum STATE
         {
-            PU_ESTABLISH_CONNECTION_WITH_BROKER,
-            PU_DELEGATE_MESSAGE_BROADCASTED_EVT,
-            PU_SUBSCRIBE_TOPIC,
+            PU_SETUP_CONNECTION_WITH_BROKER,
             PU_INIT_SIM_HARDWARE_INSTANCE,
             PU_SET_SIM_HARDWARE_INIT_STATE,
             PU_COMPLETE,
@@ -148,13 +149,7 @@ namespace HardwareSimMqtt
         }
 
 #if USETHREAD
-        private Thread MonitorEntireJobQueryThread
-        {
-            get;
-            set;
-        }
-
-        private MonitorJobThread monitorJobThread
+        private MonitorTaskThread monitorJobThread
         {
             get;
             set;
@@ -167,24 +162,14 @@ namespace HardwareSimMqtt
             //Listener
             isPowerUpFinish = false;
             qPacketInfoReceived = new Queue<PacketInfo>();
-            queriedJob = new Queue<IJob>();
             InitializeBitSetDgv();
             InitializeSystemTimer();
             autoStepChanged += new EventHandler<AutoStepChangeEventArgs>(OnAutoStepChanged);
 
 #if USETHREAD
-            MonitorEntireJobQueryThread = new Thread(new ThreadStart(MonitorJobQueryThread));
-            if (!MonitorEntireJobQueryThread.IsAlive)
-            {
-                MonitorEntireJobQueryThread.Start();
-            }
-
-            //MonitorJobThread monitorJobThread = new MonitorJobThread(simHardwareMap);
-            //MonitorEntireJobQueryThread = new Thread(new ThreadStart(monitorJobThread.MonitorJobQuery));
-            //if (!MonitorEntireJobQueryThread.IsAlive)
-            //{
-            //    MonitorEntireJobQueryThread.Start();
-            //}
+            monitorJobThread = new MonitorTaskThread();
+#else
+            queriedJob = new Queue<IJob>();
 #endif
             //Controller
             qMsgContentToDisplayOnUI = new Queue<Dictionary<ushort, BitInfo>>();
@@ -376,7 +361,7 @@ namespace HardwareSimMqtt
                     if (egroup != eGroup.Non &&
                         (!hardwareControllerMap.ContainsKey(egroup) || hardwareControllerMap[egroup] == null))
                     {
-                        hardwareControllerMap[egroup] = new HardwareControllerGroup(egroup, controllerBrokerConnectJob, OnPublishingBitInfoToBroker);
+                        hardwareControllerMap[egroup] = new HardwareControllerGroup(this, egroup);
                     }
                     else
                     {
@@ -427,6 +412,9 @@ namespace HardwareSimMqtt
             }
             hardwareControllerFlowLayoutPanel.Controls.Add(checkboxAll);
 
+#if USETHREAD
+            monitorJobThread.HardwareMap = simHardwareMap;
+#endif
             //Do connection attempt
             foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
             {
@@ -461,23 +449,14 @@ namespace HardwareSimMqtt
         {
             switch (iAutoNextStep)
             {
-                case STATE.PU_ESTABLISH_CONNECTION_WITH_BROKER:
+                case STATE.PU_SETUP_CONNECTION_WITH_BROKER:
                     listenerBrokerConnectJob = new SetBrokerConnectJob("broker.emqx.io");
                     bool bEstablished = listenerBrokerConnectJob.Run();
-
                     if (!bEstablished)
                     {
                         break;
                     }
-                    iAutoNextStep = STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT;
-                    break;
-
-                case STATE.PU_DELEGATE_MESSAGE_BROADCASTED_EVT:
                     listenerBrokerConnectJob.Client.MqttMsgPublishReceived += OnMessageReceived;
-                    iAutoNextStep = STATE.PU_SUBSCRIBE_TOPIC;
-                    break;
-
-                case STATE.PU_SUBSCRIBE_TOPIC:
                     listenerBrokerConnectJob.Client.Subscribe(new string[] { TOPIC }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
                     iAutoNextStep = STATE.PU_INIT_SIM_HARDWARE_INSTANCE;
                     break;
@@ -496,8 +475,26 @@ namespace HardwareSimMqtt
                     break;
 
                 case STATE.PU_COMPLETE:
+
                     isPowerUpFinish = true;
-                    iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
+                    if (listenerBrokerConnectJob.Client == null)
+                    {
+                        isPowerUpFinish = false;
+                    }
+
+                    if (simHardwareMap.Count == 0)
+                    {
+                        isPowerUpFinish = false;
+                    }
+
+                    if (isPowerUpFinish)
+                    {
+                        iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
+                    }
+                    else
+                    {
+                        iAutoNextStep = STATE.PU_SETUP_CONNECTION_WITH_BROKER;
+                    }
                     break;
 
             }
@@ -520,7 +517,12 @@ namespace HardwareSimMqtt
 
                 case STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE:
                     TranslatePacketReceived();
+#if !USETHREAD
                     iAutoNextStep = queriedJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
+#else
+                    iAutoNextStep = monitorJobThread.QueuedJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
+                    Debug.WriteLine(monitorJobThread.QueuedJob.ToString());
+#endif
                     break;
 
                 case STATE.AUTO_UPDATE_HARDWARE_STATE:
@@ -551,10 +553,14 @@ namespace HardwareSimMqtt
                         {
                             if (kvp.Value.Id == packetReceived.bitInfoList[i].Id)
                             {
+#if !USETHREAD
                                 queriedJob.Enqueue(
                                     new SetHardwareStateJob(this,
                                         kvp.Value,
-                                        packetReceived.bitInfoList[i].BitState));
+                                        packetReceived.bitInfoList[i].BitState, 3000));
+#else
+                                monitorJobThread.QueuedJob.Enqueue(new SetHardwareStateJob(this, kvp.Value, packetReceived.bitInfoList[i].BitState, 3000), 1);
+#endif
 
                                 ListenerLogInfo(String.Format(
                                     "TranslatePacketReceived. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}",
@@ -571,50 +577,45 @@ namespace HardwareSimMqtt
             return true;
         }
 
+#if !USETHREAD
         private void MonitorJobQueryThread()
         {
-#if USETHREAD
-            while (true)
+            while (queriedJob.Count > 0)
             {
-#endif
-                while (queriedJob.Count > 0)
+                IJob taskJob = queriedJob.Dequeue();
+
+                if (taskJob != null)
                 {
-                    IJob taskJob = queriedJob.Dequeue();
-
-                    if (taskJob != null)
+                    if (taskJob.GetType() == typeof(SetHardwareStateJob))
                     {
-                        if (taskJob.GetType() == typeof(SetHardwareStateJob))
+                        SetHardwareStateJob setHardwareStateJob = (SetHardwareStateJob)taskJob;
+                        foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
                         {
-                            SetHardwareStateJob setHardwareStateJob = (SetHardwareStateJob)taskJob;
-                            foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+                            if (kvp.Value.Id == setHardwareStateJob.Hardware.Id &&
+                                kvp.Value.BitState != setHardwareStateJob.NewBitState)
                             {
-                                if (kvp.Value.Id == setHardwareStateJob.Hardware.Id &&
-                                    kvp.Value.BitState != setHardwareStateJob.NewBitState)
-                                {
-                                    setHardwareStateJob.Run();
-                                    queriedJob.Enqueue(new ReadHardwareStateJob(this, kvp.Value));
-                                }
+                                setHardwareStateJob.Run();
+                                queriedJob.Enqueue(new ReadHardwareStateJob(this, kvp.Value));
                             }
                         }
-
-                        if (taskJob.GetType() == typeof(ReadHardwareStateJob))
-                        {
-                            ReadHardwareStateJob readHardwareStateJob = (ReadHardwareStateJob)taskJob;
-                            foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
-                            {
-                                if (kvp.Value.Id == readHardwareStateJob.Hardware.Id)
-                                {
-                                    readHardwareStateJob.Run();
-                                }
-                            }
-                        }
-
                     }
+
+                    if (taskJob.GetType() == typeof(ReadHardwareStateJob))
+                    {
+                        ReadHardwareStateJob readHardwareStateJob = (ReadHardwareStateJob)taskJob;
+                        foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+                        {
+                            if (kvp.Value.Id == readHardwareStateJob.Hardware.Id)
+                            {
+                                readHardwareStateJob.Run();
+                            }
+                        }
+                    }
+
                 }
-#if USETHREAD
             }
-#endif
         }
+#endif
 
         public void UpdateBitSetDgvData(uint bitMask, uint currentBitState)
         {

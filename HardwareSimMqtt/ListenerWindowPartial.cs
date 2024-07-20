@@ -11,6 +11,7 @@ using HardwareSimMqtt.Model.DataContainer;
 using uPLibrary.Networking.M2Mqtt.Messages;
 using Newtonsoft.Json;
 using HardwareSimMqtt.EventArgsModel;
+using System.Linq;
 
 namespace HardwareSimMqtt
 {
@@ -72,6 +73,59 @@ namespace HardwareSimMqtt
 
                     }
                 }
+            }
+        }
+
+        private List<BitInfo> bitInfoListTemp
+        {
+            get; 
+            set;
+        }
+        public void PublishAllBitInfoToBroker(List<BitInfo> bitInfoList)
+        {
+            if (bitInfoListTemp == null)
+            {
+                bitInfoListTemp = new List<BitInfo>();
+            }
+
+            if (bitInfoListTemp.Count != simHardwareMap.Count || bitInfoListTemp.Count == 0)
+            {
+                bitInfoListTemp.AddRange(bitInfoList);
+            }
+
+            if(bitInfoListTemp.Count == simHardwareMap.Count)
+            {
+                string jsonifiedAllBitInfoList = JsonConvert.SerializeObject(new JsonBitInfoList(bitInfoListTemp));
+
+                if (controllerBrokerConnectJob.Client.IsConnected)
+                {
+                    //Publish JSON converted HardwareInfoList to MQTT server
+                    ushort msgID = controllerBrokerConnectJob.Client.Publish(
+                        TOPIC,
+                        Encoding.UTF8.GetBytes(jsonifiedAllBitInfoList),
+                        MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+                        true);
+
+                    OnPublishingBitInfoToBroker.Invoke(null, new PublishBitInfoToBrokerEventArgs(msgID, bitInfoListTemp));
+                    bitInfoListTemp.Clear();
+                }
+            }
+        }
+
+        public void PublishPartialBitInfoToBroker(List<BitInfo> bitInfoList)
+        {
+            string jsonifiedBitInfoList = JsonConvert.SerializeObject(new JsonBitInfoList(bitInfoList));
+
+            if (controllerBrokerConnectJob.Client.IsConnected)
+            {
+                //Publish JSON converted HardwareInfoList to MQTT server
+                ushort msgID = controllerBrokerConnectJob.Client.Publish(
+                    TOPIC,
+                    Encoding.UTF8.GetBytes(jsonifiedBitInfoList),
+                    MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+                    true);
+
+                OnPublishingBitInfoToBroker.Invoke(null, new PublishBitInfoToBrokerEventArgs(msgID, bitInfoList));
             }
         }
 
