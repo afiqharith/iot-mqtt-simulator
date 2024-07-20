@@ -21,7 +21,7 @@ using HardwareSimMqtt.EventArgsModel;
 using System.Xml;
 using System.IO;
 
-namespace ModelInterface
+namespace HardwareSimMqtt
 {
 
     //Listener
@@ -69,13 +69,7 @@ namespace ModelInterface
             set;
         }
 
-        private Queue<IJob> qSetHardwareStateJob
-        {
-            get;
-            set;
-        }
-
-        private Queue<IJob> qReadHardwareStateJob
+        private Queue<IJob> queriedJob
         {
             get;
             set;
@@ -129,6 +123,12 @@ namespace ModelInterface
         {
             public string topic;
             public List<BitInfo> bitInfoList;
+
+            public PacketInfo(string topic, List<BitInfo> bitInfoList)
+            {
+                this.topic = topic;
+                this.bitInfoList = bitInfoList;
+            }
         }
 
         private enum STATE
@@ -148,16 +148,16 @@ namespace ModelInterface
         }
 
 #if USETHREAD
-        private Thread SetHardwareStateJobChangeThread 
-        { 
-            get; 
-            set; 
+        private Thread MonitorEntireJobQueryThread
+        {
+            get;
+            set;
         }
 
-        private Thread ReadHardwareStateJobChangeThread 
-        { 
-            get; 
-            set; 
+        private MonitorJobThread monitorJobThread
+        {
+            get;
+            set;
         }
 #endif
         public ListenerWindow()
@@ -167,25 +167,24 @@ namespace ModelInterface
             //Listener
             isPowerUpFinish = false;
             qPacketInfoReceived = new Queue<PacketInfo>();
-            qSetHardwareStateJob = new Queue<IJob>();
-            qReadHardwareStateJob = new Queue<IJob>();
+            queriedJob = new Queue<IJob>();
             InitializeBitSetDgv();
             InitializeSystemTimer();
             autoStepChanged += new EventHandler<AutoStepChangeEventArgs>(OnAutoStepChanged);
 
 #if USETHREAD
-            SetHardwareStateJobChangeThread = new Thread(new ThreadStart(MonitorSetHardwareStateJobChangeThread));
-
-            if (!SetHardwareStateJobChangeThread.IsAlive)
+            MonitorEntireJobQueryThread = new Thread(new ThreadStart(MonitorJobQueryThread));
+            if (!MonitorEntireJobQueryThread.IsAlive)
             {
-                SetHardwareStateJobChangeThread.Start();
+                MonitorEntireJobQueryThread.Start();
             }
 
-            ReadHardwareStateJobChangeThread = new Thread(new ThreadStart(MonitorReadHardwareStateJobChangeThread));
-            if (!ReadHardwareStateJobChangeThread.IsAlive)
-            {
-                ReadHardwareStateJobChangeThread.Start();
-            }
+            //MonitorJobThread monitorJobThread = new MonitorJobThread(simHardwareMap);
+            //MonitorEntireJobQueryThread = new Thread(new ThreadStart(monitorJobThread.MonitorJobQuery));
+            //if (!MonitorEntireJobQueryThread.IsAlive)
+            //{
+            //    MonitorEntireJobQueryThread.Start();
+            //}
 #endif
             //Controller
             qMsgContentToDisplayOnUI = new Queue<Dictionary<ushort, BitInfo>>();
@@ -237,9 +236,8 @@ namespace ModelInterface
 
         private void OnAutoStepChanged(object sender, AutoStepChangeEventArgs e)
         {
-            ListenerLogInfo(String.Format(
-                "Auto step change({0}) = ({1}) {2}", (int)e.OldStep, (int)e.NewStep, e.NewStep),
-                Color.Gray);
+            string textTemp = String.Format("Step({0}) = change ({1}) {2}", (int)e.OldStep, (int)e.NewStep, e.NewStep);
+            SystemHelper.AppendRichTextBox(richTextBox1, textTemp, Color.Gray);
             iLastSwitchStep = e.NewStep;
         }
 
@@ -247,16 +245,13 @@ namespace ModelInterface
         {
             JsonBitInfoList bitInfoList = JsonConvert.DeserializeObject<JsonBitInfoList>(Encoding.UTF8.GetString(e.Message));
             if (bitInfoList.InfoList == null) { return; }
-
-            PacketInfo packetInfoReceived;
-            packetInfoReceived.topic = e.Topic;
-            packetInfoReceived.bitInfoList = bitInfoList.InfoList;
-            qPacketInfoReceived.Enqueue(packetInfoReceived);
+            qPacketInfoReceived.Enqueue(new PacketInfo(e.Topic, bitInfoList.InfoList));
         }
 
-        private void ListenerLogInfo(string text, Color color)
+        public void ListenerLogInfo(string text, Color color)
         {
-            SystemHelper.AppendRichTextBox(richTextBox1, text, color);
+            string textTemp = String.Format("Step({0}) = {1}", (int)this.iAutoNextStep, text);
+            SystemHelper.AppendRichTextBox(richTextBox1, textTemp, color);
         }
 
         private bool InitializeSystemTimer()
@@ -277,7 +272,7 @@ namespace ModelInterface
             Dictionary<eGroup, HardwareViewerGroup> hardwareViewerMap = new Dictionary<eGroup, HardwareViewerGroup>();
             Dictionary<eGroup, HardwareControllerGroup> hardwareControllerMap = new Dictionary<eGroup, HardwareControllerGroup>();
 
-            string xmlFilePath = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), ConfigurationManager.AppSettings.Get("ConfigMap"));
+            string xmlFilePath = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), ConfigurationManager.AppSettings.Get("HardwareConfigFile"));
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.Load(xmlFilePath);
             XmlNodeList settings = xmlDoc.SelectNodes("/configuration/bitmap/setting");
@@ -289,7 +284,7 @@ namespace ModelInterface
 
                 XmlNodeList details = settings[i].SelectNodes("detail");
 
-                if(details.Count != 0)
+                if (details.Count != 0)
                 {
                     int ioPort = new int();
                     eIoType ioType = new eIoType();
@@ -518,18 +513,19 @@ namespace ModelInterface
                     {
                         break;
                     }
+                    string log = String.Format("New packet received count: {0}", qPacketInfoReceived.Count);
+                    ListenerLogInfo(log, Color.Blue);
                     iAutoNextStep = STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE;
                     break;
 
                 case STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE:
                     TranslatePacketReceived();
-                    iAutoNextStep = qSetHardwareStateJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
+                    iAutoNextStep = queriedJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
                 case STATE.AUTO_UPDATE_HARDWARE_STATE:
 #if !USETHREAD
-                    MonitorSetHardwareStateJobChangeThread();
-                    MonitorReadHardwareStateJobChangeThread();
+                    MonitorJobQueryThread();
 #endif
                     iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
@@ -555,13 +551,13 @@ namespace ModelInterface
                         {
                             if (kvp.Value.Id == packetReceived.bitInfoList[i].Id)
                             {
-                                qSetHardwareStateJob.Enqueue(
-                                    new SetHardwareStateJob(
+                                queriedJob.Enqueue(
+                                    new SetHardwareStateJob(this,
                                         kvp.Value,
                                         packetReceived.bitInfoList[i].BitState));
 
                                 ListenerLogInfo(String.Format(
-                                    "HW new state received. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}",
+                                    "TranslatePacketReceived. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}",
                                     packetReceived.bitInfoList[i].Id,
                                     kvp.Value.BitMask.ToString("X"),
                                      packetReceived.bitInfoList[i].BitState.ToString("X")),
@@ -575,80 +571,52 @@ namespace ModelInterface
             return true;
         }
 
-        private void MonitorSetHardwareStateJobChangeThread()
+        private void MonitorJobQueryThread()
         {
 #if USETHREAD
             while (true)
             {
 #endif
-            while (qSetHardwareStateJob.Count > 0)
-            {
-                SetHardwareStateJob hardwareStateJob = (SetHardwareStateJob)qSetHardwareStateJob.Dequeue();
-
-                foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+                while (queriedJob.Count > 0)
                 {
-                    if (hardwareStateJob != null &&
-                        kvp.Value.Id == hardwareStateJob.Hardware.Id &&
-                        kvp.Value.BitState != hardwareStateJob.NewBitState)
+                    IJob taskJob = queriedJob.Dequeue();
+
+                    if (taskJob != null)
                     {
-                        Color color = Color.Orange;
+                        if (taskJob.GetType() == typeof(SetHardwareStateJob))
+                        {
+                            SetHardwareStateJob setHardwareStateJob = (SetHardwareStateJob)taskJob;
+                            foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+                            {
+                                if (kvp.Value.Id == setHardwareStateJob.Hardware.Id &&
+                                    kvp.Value.BitState != setHardwareStateJob.NewBitState)
+                                {
+                                    setHardwareStateJob.Run();
+                                    queriedJob.Enqueue(new ReadHardwareStateJob(this, kvp.Value));
+                                }
+                            }
+                        }
 
-                        ListenerLogInfo(String.Format(
-                                "Set new HW state changed. HWID: {0}, mask bit: 0x{1:D4}, state bit change from 0x{2:D4} to 0x{3:D4}",
-                                hardwareStateJob.Hardware.Id,
-                                kvp.Value.BitMask.ToString("X"),
-                                kvp.Value.BitState.ToString("X"),
-                                hardwareStateJob.NewBitState.ToString("X")),
-                                color);
-                        hardwareStateJob.Run();
+                        if (taskJob.GetType() == typeof(ReadHardwareStateJob))
+                        {
+                            ReadHardwareStateJob readHardwareStateJob = (ReadHardwareStateJob)taskJob;
+                            foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+                            {
+                                if (kvp.Value.Id == readHardwareStateJob.Hardware.Id)
+                                {
+                                    readHardwareStateJob.Run();
+                                }
+                            }
+                        }
 
-                        qReadHardwareStateJob.Enqueue(new ReadHardwareStateJob(kvp.Value));
-
-                        UpdateBitSetDgvData(hardwareStateJob.Hardware.BitMask, hardwareStateJob.Hardware.BitState);
                     }
                 }
-            }
-
 #if USETHREAD
             }
 #endif
         }
 
-        private void MonitorReadHardwareStateJobChangeThread()
-        {
-#if USETHREAD
-            while (true)
-            {
-#endif
-            while (qReadHardwareStateJob.Count > 0)
-            {
-                ReadHardwareStateJob hardwareStateJob = (ReadHardwareStateJob)qReadHardwareStateJob.Dequeue();
-
-                foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
-                {
-                    if (hardwareStateJob != null &&
-                        kvp.Value.Id == hardwareStateJob.Hardware.Id
-                        //&& kvp.Value.CurrentBitState == hardwareStateJob.CurrentBitState
-                        )
-                    {
-                        hardwareStateJob.Run();
-                        Color color = ((hardwareStateJob.BitState & kvp.Value.BitState) != 0) ? Color.Green : Color.OrangeRed;
-
-                        ListenerLogInfo(String.Format(
-                                "Read HW state changed done. HWID: {0}, mask bit: 0x{1:D4}, current state bit 0x{2:D4}",
-                                hardwareStateJob.Hardware.Id,
-                                kvp.Value.BitMask.ToString("X"),
-                                hardwareStateJob.BitState.ToString("X")),
-                                color);
-                    }
-                }
-            }
-#if USETHREAD
-            }
-#endif
-        }
-
-        private void UpdateBitSetDgvData(uint bitMask, uint currentBitState)
+        public void UpdateBitSetDgvData(uint bitMask, uint currentBitState)
         {
             for (int nCol = bitSetDataTable.Columns.Count - 1; nCol >= 0; nCol--)
             {

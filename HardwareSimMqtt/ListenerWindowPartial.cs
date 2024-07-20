@@ -12,21 +12,11 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 using Newtonsoft.Json;
 using HardwareSimMqtt.EventArgsModel;
 
-namespace ModelInterface
+namespace HardwareSimMqtt
 {
     //Controller
     public partial class ListenerWindow
     {
-        private class UnitCheckBoxList
-        {
-            public List<CheckBox> Data = new List<CheckBox>();
-
-            public UnitCheckBoxList()
-            {
-                this.Data = new List<CheckBox>();
-            }
-        }
-
         private SetBrokerConnectJob controllerBrokerConnectJob
         {
             get;

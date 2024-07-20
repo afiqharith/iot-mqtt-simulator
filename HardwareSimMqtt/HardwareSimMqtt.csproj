@@ -122,6 +122,7 @@
     <Compile Include="Model\BitMap\BitMap.cs" />
     <Compile Include="Model\DataContainer\BitInfo.cs" />
     <Compile Include="Model\DataContainer\JsonBitInfoList.cs" />
+    <Compile Include="Model\QueryJob\MonitorJobThread.cs" />
     <Compile Include="Model\QueryJob\ReadHardwareStateJob.cs" />
     <Compile Include="Model\QueryJob\SetBrokerConnectJob.cs" />
     <Compile Include="Model\QueryJob\SetHardwareStateJob.cs" />
@@ -177,7 +178,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ConfigMap.xml">
+    <Content Include="HardwareConfig.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

@@ -3,7 +3,7 @@ using HardwareSimMqtt.Model;
 using HardwareSimMqtt.Model.BitMap;
 using HardwareSimMqtt.Model.DataContainer;
 using HardwareSimMqtt.Model.QueryJob;
-using ModelInterface;
+using HardwareSimMqtt;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
