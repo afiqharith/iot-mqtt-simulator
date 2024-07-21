@@ -24,56 +24,57 @@ namespace HardwareSimMqtt
             set;
         }
 
-        private Queue<Dictionary<ushort, BitInfo>> qMsgContentToDisplayOnUI
+        private Queue<Dictionary<ushort, BitInfo>> queueBufferMessageToDisplay
         {
             get;
             set;
         }
 
 
-        private event EventHandler<PublishBitInfoToBrokerEventArgs> OnPublishingBitInfoToBroker;
+        private event EventHandler<PublishBitInfoToBrokerEventArgs> onPublishingBitInfoToBroker;
 
-        private void OnPublishBitInfoToBroker(object sender, PublishBitInfoToBrokerEventArgs e)
+        private void InitializePartialListenerWindow()
         {
-            for (int i = 0; i < e.BitInfoList.Count; i++)
-            {
-                //Queue HardwareInfoList content to display on UI 
-                Dictionary<ushort, BitInfo> messageMap = new Dictionary<ushort, BitInfo>();
-                messageMap.Add(e.MessageId, e.BitInfoList[i]);
-                qMsgContentToDisplayOnUI.Enqueue(messageMap);
+            //Controller
+            queueBufferMessageToDisplay = new Queue<Dictionary<ushort, BitInfo>>();
 
-                ContollerLogInfo(String.Format(
-                    "ID[{0}] HW state change command sent. HWID: {1}, cmd bit: 0x{2:D4}",
-                    e.MessageId,
-                    e.BitInfoList[i].Id,
-                    e.BitInfoList[i].BitState.ToString("X")),
-                    Color.Gray);
-            }
-        }
-
-        public void OnMessagePublished(object sender, MqttMsgPublishedEventArgs e)
-        {
-            if (e.IsPublished)
+            controllerBrokerConnectJob = new SetBrokerConnectJob("broker.emqx.io");
+            bool bEstablished = controllerBrokerConnectJob.Run();
+            if (bEstablished)
             {
-                while (qMsgContentToDisplayOnUI.Count > 0)
+                controllerBrokerConnectJob.Client.MqttMsgPublished += (sender, e) =>
                 {
-                    //De-queue message content to display on UI
-                    Dictionary<ushort, BitInfo> messageMap = qMsgContentToDisplayOnUI.Dequeue();
-
-                    foreach (KeyValuePair<ushort, BitInfo> kvp in messageMap)
+                    if (e.IsPublished)
                     {
-                        BitInfo bitInfo = kvp.Value;
+                        while (queueBufferMessageToDisplay.Count > 0)
+                        {
+                            //De-queue message content to display on UI
+                            Dictionary<ushort, BitInfo> messageMap = queueBufferMessageToDisplay.Dequeue();
 
-                        ContollerLogInfo(String.Format(
-                            "ID[{0}] HW state change command published. HWID: {1}, cmd bit: 0x{2:D4}",
-                            kvp.Key,
-                            bitInfo.Id,
-                            bitInfo.BitState.ToString("X")),
-                            bitInfo.BitState != 0 ? Color.Blue : Color.OrangeRed);
-
+                            foreach (KeyValuePair<ushort, BitInfo> kvp in messageMap)
+                            {
+                                BitInfo bitInfo = kvp.Value;
+                                string log = String.Format("ID[{0}] HW state change command published. HWID: {1}, cmd bit: 0x{2:D4}", kvp.Key, bitInfo.Id, bitInfo.BitState.ToString("X"));
+                                ContollerLogInfo(log, bitInfo.BitState != 0 ? Color.Blue : Color.OrangeRed);
+                            }
+                        }
                     }
-                }
+                };
             }
+
+            onPublishingBitInfoToBroker += (sender, e) =>
+            {
+                for (int i = 0; i < e.BitInfoList.Count; i++)
+                {
+                    //Queue HardwareInfoList content to display on UI 
+                    Dictionary<ushort, BitInfo> messageMap = new Dictionary<ushort, BitInfo>();
+                    messageMap.Add(e.MessageId, e.BitInfoList[i]);
+                    queueBufferMessageToDisplay.Enqueue(messageMap);
+
+                    string log = String.Format("ID[{0}] HW state change command sent. HWID: {1}, cmd bit: 0x{2:D4}", e.MessageId, e.BitInfoList[i].Id, e.BitInfoList[i].BitState.ToString("X"));
+                    ContollerLogInfo(log, Color.Gray);
+                }
+            };
         }
 
         private List<BitInfo> bitInfoListTemp
@@ -106,7 +107,7 @@ namespace HardwareSimMqtt
                         MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
                         true);
 
-                    OnPublishingBitInfoToBroker.Invoke(null, new PublishBitInfoToBrokerEventArgs(msgID, bitInfoListTemp));
+                    onPublishingBitInfoToBroker.Invoke(null, new PublishBitInfoToBrokerEventArgs(msgID, bitInfoListTemp));
                     bitInfoListTemp.Clear();
                 }
             }
@@ -125,7 +126,7 @@ namespace HardwareSimMqtt
                     MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
                     true);
 
-                OnPublishingBitInfoToBroker.Invoke(null, new PublishBitInfoToBrokerEventArgs(msgID, bitInfoList));
+                onPublishingBitInfoToBroker.Invoke(null, new PublishBitInfoToBrokerEventArgs(msgID, bitInfoList));
             }
         }
 

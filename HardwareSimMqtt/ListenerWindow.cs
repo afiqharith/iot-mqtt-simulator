@@ -1,4 +1,4 @@
-﻿#define USETHREAD
+﻿//#define USETHREAD
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -30,53 +30,19 @@ namespace HardwareSimMqtt
     {
         public const String TOPIC = "MqttBitInfoBroker";
 
-        private class AutoStepChangeEventArgs : EventArgs
-        {
-            public STATE OldStep
-            {
-                get;
-                set;
-            }
-
-            public STATE NewStep
-            {
-                get;
-                set;
-            }
-
-            public AutoStepChangeEventArgs(STATE oldStep, STATE newStep)
-            {
-                this.OldStep = oldStep;
-                this.NewStep = newStep;
-            }
-        }
-
-        private static event EventHandler<AutoStepChangeEventArgs> autoStepChanged;
-        private SetBrokerConnectJob listenerBrokerConnectJob
-        {
-            get;
-            set;
-        }
-
         private WinformTimer systemTimer
         {
             get;
             set;
         }
 
-        private Queue<PacketInfo> qPacketInfoReceived
-        {
-            get;
-            set;
-        }
+        private event EventHandler<AutoStepChangeEventArgs> autoStepChanged;
 
-#if !USETHREAD
-        private Queue<IJob> queriedJob
+        private SetBrokerConnectJob listenerBrokerConnectJob
         {
             get;
             set;
         }
-#endif
 
         protected Dictionary<uint, HardwareBase> simHardwareMap
         {
@@ -84,7 +50,7 @@ namespace HardwareSimMqtt
             set;
         }
 
-        private uint realTimeBitSet
+        private Queue<PacketInfo> queuePacketInfoReceived
         {
             get;
             set;
@@ -93,6 +59,12 @@ namespace HardwareSimMqtt
         private DataTable bitSetDataTable
         {
             get; set;
+        }
+
+        private uint realTimeBitSet
+        {
+            get;
+            set;
         }
 
         private bool isPowerUpFinish
@@ -124,28 +96,14 @@ namespace HardwareSimMqtt
         //Use when de-packet the data receive from broker
         private struct PacketInfo
         {
-            public string topic;
+            public string headerTopic;
             public List<BitInfo> bitInfoList;
 
-            public PacketInfo(string topic, List<BitInfo> bitInfoList)
+            public PacketInfo(string headerTopic, List<BitInfo> bitInfoList)
             {
-                this.topic = topic;
+                this.headerTopic = headerTopic;
                 this.bitInfoList = bitInfoList;
             }
-        }
-
-        private enum STATE
-        {
-            PU_SETUP_CONNECTION_WITH_BROKER,
-            PU_INIT_SIM_HARDWARE_INSTANCE,
-            PU_SET_SIM_HARDWARE_INIT_STATE,
-            PU_COMPLETE,
-
-            AUTO_WAIT_NEW_MESSAGE_BROADCAST,
-            AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE,
-            AUTO_UPDATE_HARDWARE_STATE,
-
-            PE_SYSTEM_SHUTDOWN,
         }
 
 #if USETHREAD
@@ -154,83 +112,32 @@ namespace HardwareSimMqtt
             get;
             set;
         }
+#else
+        private Queue<IJob> queriedJob
+        {
+            get;
+            set;
+        }
 #endif
         public ListenerWindow()
         {
             InitializeComponent();
-
-            //Listener
-            isPowerUpFinish = false;
-            qPacketInfoReceived = new Queue<PacketInfo>();
-            InitializeBitSetDgv();
-            InitializeSystemTimer();
-            autoStepChanged += new EventHandler<AutoStepChangeEventArgs>(OnAutoStepChanged);
-
+            InititalizeListnerWindow();
+            InitializePartialListenerWindow();
+            this.FormClosing += (sender, e) => DisconnectBrokerConnection();
+            this.FormClosed += (sender, e) => DisconnectBrokerConnection();
 #if USETHREAD
             monitorJobThread = new MonitorTaskThread();
 #else
             queriedJob = new Queue<IJob>();
 #endif
-            //Controller
-            qMsgContentToDisplayOnUI = new Queue<Dictionary<ushort, BitInfo>>();
-
-            controllerBrokerConnectJob = new SetBrokerConnectJob("broker.emqx.io");
-            bool bEstablished = controllerBrokerConnectJob.Run();
-            if (bEstablished)
-            {
-                controllerBrokerConnectJob.Client.MqttMsgPublished += OnMessagePublished;
-            }
-
-            OnPublishingBitInfoToBroker += new EventHandler<PublishBitInfoToBrokerEventArgs>(OnPublishBitInfoToBroker);
-        }
-
-        private void OnFormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (listenerBrokerConnectJob.Client.IsConnected)
-            {
-                listenerBrokerConnectJob.Client.Disconnect();
-            }
-
-            if (controllerBrokerConnectJob.Client.IsConnected)
-            {
-                controllerBrokerConnectJob.Client.Disconnect();
-            }
-        }
-
-        private void OnFormClosed(object sender, FormClosedEventArgs e)
-        {
-            if (listenerBrokerConnectJob.Client.IsConnected)
-            {
-                listenerBrokerConnectJob.Client.Disconnect();
-            }
-
-            if (controllerBrokerConnectJob.Client.IsConnected)
-            {
-                controllerBrokerConnectJob.Client.Disconnect();
-            }
-        }
-
-        private void OnSystemTimerTick(object sender, EventArgs e)
-        {
-
-            if (!isPowerUpFinish)
-                PowerUpOperation();
-            else
-                AutoOperation();
-        }
-
-        private void OnAutoStepChanged(object sender, AutoStepChangeEventArgs e)
-        {
-            string textTemp = String.Format("Step({0}) = change ({1}) {2}", (int)e.OldStep, (int)e.NewStep, e.NewStep);
-            SystemHelper.AppendRichTextBox(richTextBox1, textTemp, Color.Gray);
-            iLastSwitchStep = e.NewStep;
         }
 
         private void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
         {
             JsonBitInfoList bitInfoList = JsonConvert.DeserializeObject<JsonBitInfoList>(Encoding.UTF8.GetString(e.Message));
             if (bitInfoList.InfoList == null) { return; }
-            qPacketInfoReceived.Enqueue(new PacketInfo(e.Topic, bitInfoList.InfoList));
+            queuePacketInfoReceived.Enqueue(new PacketInfo(e.Topic, bitInfoList.InfoList));
         }
 
         public void ListenerLogInfo(string text, Color color)
@@ -239,14 +146,29 @@ namespace HardwareSimMqtt
             SystemHelper.AppendRichTextBox(richTextBox1, textTemp, color);
         }
 
+        private void InititalizeListnerWindow()
+        {
+            //Listener
+            isPowerUpFinish = false;
+            queuePacketInfoReceived = new Queue<PacketInfo>();
+            InitializeBitSetDgv();
+            InitializeSystemTimer();
+
+            autoStepChanged += (sender, e) =>
+            {
+                string textTemp = String.Format("Step({0}) = change ({1}) {2}", (int)e.OldStep, (int)e.NewStep, e.NewStep);
+                SystemHelper.AppendRichTextBox(richTextBox1, textTemp, Color.Gray);
+                iLastSwitchStep = e.NewStep;
+            };
+        }
+
         private bool InitializeSystemTimer()
         {
             systemTimer = new WinformTimer();
             systemTimer.Enabled = true;
             systemTimer.Interval = 1;
-            systemTimer.Tick += new EventHandler(OnSystemTimerTick);
+            systemTimer.Tick += MainOperation;
             systemTimer.Start();
-
             return true;
         }
 
@@ -445,7 +367,28 @@ namespace HardwareSimMqtt
             DataGridViewBitSet.DataSource = bitSetDataTable;
         }
 
-        private bool PowerUpOperation()
+        private void DisconnectBrokerConnection()
+        {
+            if (listenerBrokerConnectJob.Client.IsConnected)
+            {
+                listenerBrokerConnectJob.Client.Disconnect();
+            }
+
+            if (controllerBrokerConnectJob.Client.IsConnected)
+            {
+                controllerBrokerConnectJob.Client.Disconnect();
+            }
+        }
+
+        private void MainOperation(object sender, EventArgs e)
+        {
+            if (!isPowerUpFinish)
+                PowerUpOperation(sender, e);
+            else
+                AutoOperation(sender, e);
+        }
+
+        private bool PowerUpOperation(object sender, EventArgs e)
         {
             switch (iAutoNextStep)
             {
@@ -501,16 +444,16 @@ namespace HardwareSimMqtt
             return isPowerUpFinish;
         }
 
-        private bool AutoOperation()
+        private bool AutoOperation(object sender, EventArgs e)
         {
             switch (iAutoNextStep)
             {
                 case STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST:
-                    if (qPacketInfoReceived.Count == 0)
+                    if (queuePacketInfoReceived.Count == 0)
                     {
                         break;
                     }
-                    string log = String.Format("New packet received count: {0}", qPacketInfoReceived.Count);
+                    string log = String.Format("New packet received count: {0}", queuePacketInfoReceived.Count);
                     ListenerLogInfo(log, Color.Blue);
                     iAutoNextStep = STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE;
                     break;
@@ -540,12 +483,13 @@ namespace HardwareSimMqtt
             return true;
         }
 
-        private bool TranslatePacketReceived()
+        private int TranslatePacketReceived()
         {
-            while (qPacketInfoReceived.Count > 0)
+            int translatedPacketCount = 0;
+            while (queuePacketInfoReceived.Count > 0)
             {
-                PacketInfo packetReceived = qPacketInfoReceived.Dequeue();
-                if (packetReceived.topic == TOPIC)
+                PacketInfo packetReceived = queuePacketInfoReceived.Dequeue();
+                if (packetReceived.headerTopic == TOPIC)
                 {
                     for (int i = 0; i < packetReceived.bitInfoList.Count; i++)
                     {
@@ -554,27 +498,19 @@ namespace HardwareSimMqtt
                             if (kvp.Value.Id == packetReceived.bitInfoList[i].Id)
                             {
 #if !USETHREAD
-                                queriedJob.Enqueue(
-                                    new SetHardwareStateJob(this,
-                                        kvp.Value,
-                                        packetReceived.bitInfoList[i].BitState, 3000));
+                                queriedJob.Enqueue(new SetHardwareStateJob(this, kvp.Value, packetReceived.bitInfoList[i].BitState, 3000));
 #else
                                 monitorJobThread.QueuedJob.Enqueue(new SetHardwareStateJob(this, kvp.Value, packetReceived.bitInfoList[i].BitState, 3000), 1);
 #endif
-
-                                ListenerLogInfo(String.Format(
-                                    "TranslatePacketReceived. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}",
-                                    packetReceived.bitInfoList[i].Id,
-                                    kvp.Value.BitMask.ToString("X"),
-                                     packetReceived.bitInfoList[i].BitState.ToString("X")),
-                                    Color.Blue);
+                                string log = String.Format("TranslatePacketReceived. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}", packetReceived.bitInfoList[i].Id, kvp.Value.BitMask.ToString("X"), packetReceived.bitInfoList[i].BitState.ToString("X"));
+                                ListenerLogInfo(log, Color.Blue);
+                                translatedPacketCount++;
                             }
                         }
                     }
                 }
             }
-
-            return true;
+            return translatedPacketCount;
         }
 
 #if !USETHREAD
@@ -616,7 +552,6 @@ namespace HardwareSimMqtt
             }
         }
 #endif
-
         public void UpdateBitSetDgvData(uint bitMask, uint currentBitState)
         {
             for (int nCol = bitSetDataTable.Columns.Count - 1; nCol >= 0; nCol--)

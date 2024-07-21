@@ -54,26 +54,32 @@ namespace HardwareSimMqtt.Model
 
         private void SetSpeedProperty(ref int speed, int newval)
         {
-            speed = newval;
-            base.AnalogData = newval;
+            //speed = newval;
+            //base.AnalogData = newval;
+            int tempSpeed = 0;
 
-            //if (newval != -1)
-            //{
-            //    int rpm = newval;
-            //    int rps = rpm / 60; //revolution per second
+            //Simulate speed increase overtime (interval 0.5s)
+            if (newval != -1)
+            {
+                int rpm = newval;
+                int rps = rpm / 60; //revolution per second
 
-            //    while (!(base.AnalogData >= newval))
-            //    {
-            //        speed += rps;
-            //        base.AnalogData += rps;
-            //        Thread.Sleep(1000);
-            //        //Task.Delay(1000);
-            //        Console.WriteLine(DateTime.Now +" "+base.Id + " speed:" + speed + "rpm");
-            //    }
-            //    speed = -1;
-            //    base.AnalogData = -1;
+                Thread thread = new Thread(() =>
+                {
+                    while (!(base.AnalogData >= newval))
+                    {
+                        int randRps = new Random().Next(1, rps);
+                        tempSpeed += randRps;
+                        base.AnalogData += randRps;
+                        Thread.Sleep(250);
+                        Console.WriteLine(DateTime.Now + " " + base.Id + " speed:" + tempSpeed + "rpm");
+                    }
+                });
+                thread.Start();
 
-            //}
+                speed = tempSpeed;
+                base.AnalogData = tempSpeed;
+            }
         }
 
         public void BindWithUIComponent(Panel panel)

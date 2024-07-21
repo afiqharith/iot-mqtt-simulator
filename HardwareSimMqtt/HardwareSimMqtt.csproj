@@ -103,6 +103,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EventArgsModel\AutoStepChangeEventArgs.cs" />
     <Compile Include="EventArgsModel\PublishBitInfoToBrokerEventArgs.cs" />
     <Compile Include="HardwareHub\HHGPIOController.cs" />
     <Compile Include="HardwareHub\HHSerialPortController.cs" />
@@ -122,6 +123,7 @@
     <Compile Include="Model\BitMap\BitMap.cs" />
     <Compile Include="Model\DataContainer\BitInfo.cs" />
     <Compile Include="Model\DataContainer\JsonBitInfoList.cs" />
+    <Compile Include="Model\EnumParam.cs" />
     <Compile Include="Model\QueryJob\MonitorTaskThread.cs" />
     <Compile Include="Model\QueryJob\PriorityQueue.cs" />
     <Compile Include="Model\QueryJob\ReadHardwareStateJob.cs" />
