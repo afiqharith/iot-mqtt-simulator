@@ -12,7 +12,7 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 
 namespace HardwareSimMqtt.UIComponent
 {
-    public partial class HardwareControllerGroup : UserControl
+    public partial class UiHardwareControllerGroup : UserControl
     {
         private eGroup _egroup;
         public eGroup GroupLocation
@@ -33,38 +33,38 @@ namespace HardwareSimMqtt.UIComponent
             set;
         }
 
-        public HardwareControllerGroup(ListenerWindow parentWindow, eGroup egroup)
+        public UiHardwareControllerGroup(eGroup egroup)
         {
             InitializeComponent();
-            this.ParentWindow = parentWindow;
-            this.GroupLocation = egroup;
-            this.CheckBoxBoth.Text = "Both";
-            this.CheckBoxBoth.CheckStateChanged += new EventHandler(CheckboxBoth_OnCheckStateChanged);
-            this.checkBoxMaskMap = new Dictionary<CheckBox, eBitMask>();
+            ParentWindow = Program.WndHandle;
+            GroupLocation = egroup;
+            CheckBoxBoth.Text = "Both";
+            CheckBoxBoth.CheckStateChanged += new EventHandler(CheckboxBoth_OnCheckStateChanged);
+            checkBoxMaskMap = new Dictionary<CheckBox, eBitMask>();
         }
 
         private void SetGroupLocationProperty(ref eGroup _group, eGroup newval)
         {
             _group = newval;
-            this.GroupBoxLoc.Text = String.Format("Group Loc{0}", (int)newval);
+            GroupBoxLoc.Text = String.Format("Group Loc{0}", (int)newval);
         }
 
         public void BindCheckboxLampId(string id, eBitMask mask)
         {
-            this.CheckBoxLamp.Text = String.Format("Lamp ID{0}", (int)this.GroupLocation); ;
-            this.CheckBoxLamp.Tag = id;
-            this.CheckBoxLamp.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
+            CheckBoxLamp.Text = String.Format("Lamp ID{0}", (int)this.GroupLocation); ;
+            CheckBoxLamp.Tag = id;
+            CheckBoxLamp.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
 
-            this.checkBoxMaskMap.Add(this.CheckBoxLamp, mask);
+            checkBoxMaskMap.Add(this.CheckBoxLamp, mask);
         }
 
         public void BindCheckboxFanId(string id, eBitMask mask)
         {
-            this.CheckBoxFan.Text = String.Format("Fan ID{0}", (int)this.GroupLocation);
-            this.CheckBoxFan.Tag = id;
-            this.CheckBoxFan.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
+            CheckBoxFan.Text = String.Format("Fan ID{0}", (int)this.GroupLocation);
+            CheckBoxFan.Tag = id;
+            CheckBoxFan.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
 
-            this.checkBoxMaskMap.Add(this.CheckBoxFan, mask);
+            checkBoxMaskMap.Add(this.CheckBoxFan, mask);
         }
 
         private void CheckboxUnit_OnCheckStateChanged(object sender, EventArgs e)
@@ -85,7 +85,6 @@ namespace HardwareSimMqtt.UIComponent
                     bitInfoList.Add(new BitInfo((string)checkbox.Tag, bitState));
                 }
             }
-
             ParentWindow.PublishPartialBitInfoToBroker(bitInfoList);
         }
 
@@ -130,11 +129,12 @@ namespace HardwareSimMqtt.UIComponent
                 uint bitState = checkbox.Checked ? (uint)checkBoxMaskMap[kvp.Key] : ((uint)checkBoxMaskMap[kvp.Key] & (uint)~checkBoxMaskMap[kvp.Key]);
                 bitInfoList.Add(new BitInfo((string)kvp.Key.Tag, bitState));
             }
-            this.CheckBoxBoth.CheckStateChanged -= new EventHandler(CheckboxBoth_OnCheckStateChanged);
-            this.CheckBoxBoth.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
-            this.CheckBoxBoth.CheckStateChanged += new EventHandler(CheckboxBoth_OnCheckStateChanged);
+            CheckBoxBoth.CheckStateChanged -= new EventHandler(CheckboxBoth_OnCheckStateChanged);
+            CheckBoxBoth.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
+            CheckBoxBoth.CheckStateChanged += new EventHandler(CheckboxBoth_OnCheckStateChanged);
 
             ParentWindow.PublishAllBitInfoToBroker(bitInfoList);
         }
+
     }
 }

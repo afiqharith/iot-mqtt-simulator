@@ -18,21 +18,22 @@ namespace HardwareSimMqtt.Model
             set => SetPanelProperty(ref _pPanel, value);
         }
 
-        private HardwareViewerGroup hardwareViewer { get; set; }
+        private UiHardwareViewerGroup hardwareViewer { get; set; }
 
         public override uint BitState
         {
             set
             {
                 base.BitState = value;
-                if (this.pPanel != null)
+
+                if (pPanel != null)
                 {
-                    this.pPanel.BackColor = GetUiBackColorIndicator(this.IsOn);
+                    pPanel.BackColor = GetUiBackColorIndicator(IsOn);
                 }
 
-                if (this.hardwareViewer != null)
+                if (hardwareViewer != null)
                 {
-                    this.hardwareViewer.ToggleUiFan(this.IsOn);
+                    hardwareViewer.ToggleUiFan(IsOn);
                 }
             }
         }
@@ -54,40 +55,93 @@ namespace HardwareSimMqtt.Model
 
         private void SetSpeedProperty(ref int speed, int newval)
         {
-            //speed = newval;
-            //base.AnalogData = newval;
-            int tempSpeed = 0;
-
-            //Simulate speed increase overtime (interval 0.5s)
-            if (newval != -1)
+            if (ComController.GetType() != typeof(HHEmuGPIOController))
             {
-                int rpm = newval;
-                int rps = rpm / 60; //revolution per second
-
-                Thread thread = new Thread(() =>
+                speed = newval;
+                base.AnalogData = newval;
+            }
+            //Simulate the analog value increment/decrement
+            else
+            {
+                if (base.IsOn)
                 {
-                    while (!(base.AnalogData >= newval))
+                    int tempSpeed = /*0*/_speed;
+                    //Simulate speed increase overtime (interval 0.5s)
+                    if (newval != -1)
                     {
-                        int randRps = new Random().Next(1, rps);
-                        tempSpeed += randRps;
-                        base.AnalogData += randRps;
-                        Thread.Sleep(250);
-                        Console.WriteLine(DateTime.Now + " " + base.Id + " speed:" + tempSpeed + "rpm");
-                    }
-                });
-                thread.Start();
+                        int rpm = newval;
+                        int rps = rpm / 60; //revolution per second
 
-                speed = tempSpeed;
-                base.AnalogData = tempSpeed;
+                        Thread thread = new Thread(() =>
+                        {
+                            while (!(base.AnalogData >= newval) && IsOn && !Program.CancelTokenSource.Token.IsCancellationRequested)
+                            {
+                                int randRps = new Random().Next(1, rps);
+                                tempSpeed += randRps;
+                                base.AnalogData += randRps;
+                                Thread.Sleep(new Random().Next(50, 100));
+                                Console.WriteLine(DateTime.Now + " " + base.Id + " speed:" + tempSpeed + "rpm");
+                                SystemHelper.SafeInvoke(hardwareViewer.LabelFanSpeed, () =>
+                                {
+                                    hardwareViewer.LabelFanSpeed.Text = String.Format("S:{0}", tempSpeed);
+                                });
+
+                                _speed = tempSpeed;
+                                base.AnalogData = tempSpeed;
+                            }
+                        });
+                        thread.Start();
+                    }
+                }
+                else
+                {
+                    int tempSpeed = newval;
+                    //Simulate speed increase overtime (interval 0.5s)
+                    if (newval != -1)
+                    {
+                        int rpm = newval;
+                        int rps = rpm / 60; //revolution per second
+
+                        Thread thread = new Thread(() =>
+                        {
+                            while ((base.AnalogData > 0) && IsOff && !Program.CancelTokenSource.Token.IsCancellationRequested)
+                            {
+                                int randRps = new Random().Next(1, rps);
+                                tempSpeed -= randRps;
+                                base.AnalogData -= randRps;
+                                Thread.Sleep(new Random().Next(50, 100));
+                                Console.WriteLine(DateTime.Now + " " + base.Id + " speed:" + tempSpeed + "rpm");
+                                _speed = tempSpeed;
+                                base.AnalogData = tempSpeed;
+                                if (tempSpeed <= 0)
+                                {
+                                    _speed = 0;
+                                    base.AnalogData = 0;
+                                }
+                                SystemHelper.SafeInvoke(hardwareViewer.LabelFanSpeed, () =>
+                                {
+                                    hardwareViewer.LabelFanSpeed.Text = String.Format("S:{0}", tempSpeed);
+                                });
+                            }
+                        });
+                        thread.Start();
+                    }
+                }
             }
         }
 
+        public override bool Update()
+        {
+            return base.Update();
+        }
+
+        //Deprecated: Currently not in use
         public void BindWithUIComponent(Panel panel)
         {
             this.pPanel = panel;
         }
 
-        public void BindWithUiComponent(HardwareViewerGroup hardwareViewer)
+        public void BindWithUiComponent(UiHardwareViewerGroup hardwareViewer)
         {
             this.hardwareViewer = hardwareViewer;
         }

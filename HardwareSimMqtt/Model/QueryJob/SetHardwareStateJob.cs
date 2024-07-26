@@ -37,24 +37,24 @@ namespace HardwareSimMqtt.Model.QueryJob
 
         public SetHardwareStateJob(HardwareBase hardware, uint newBitState = 0, int newAnalogData = -1)
         {
-            this.Hardware = hardware;
-            this.NewBitState = newBitState;
-            this.NewAnalogData = newAnalogData;
+            Hardware = hardware;
+            NewBitState = newBitState;
+            NewAnalogData = newAnalogData;
         }
 
         public SetHardwareStateJob(ListenerWindow parentWindow, HardwareBase hardware, uint newBitState = 0, int newAnalogData = -1)
         {
-            this.ParentWindow = parentWindow;
-            this.Hardware = hardware;
-            this.NewBitState = newBitState;
-            this.NewAnalogData = newAnalogData;
+            ParentWindow = parentWindow;
+            Hardware = hardware;
+            NewBitState = newBitState;
+            NewAnalogData = newAnalogData;
         }
 
         public virtual void Run()
         {
             bool bRet = this.Hardware.Connect();
 
-            if (this.Hardware.BitState == this.NewBitState)
+            if (Hardware.BitState == NewBitState)
             {
                 bRet = false;
             }
@@ -62,35 +62,42 @@ namespace HardwareSimMqtt.Model.QueryJob
             if (bRet)
             {
                 String msgLog = String.Format("SetHardwareStateJob. HWID: {0}, mask bit: 0x{1:D4}, state bit change from 0x{2:D4} to 0x{3:D4}",
-                    this.Hardware.Id,
-                    this.Hardware.BitMask.ToString("X"),
-                    this.Hardware.BitState.ToString("X"),
-                    this.NewBitState.ToString("X"));
+                    Hardware.Id,
+                    Hardware.BitMask.ToString("X"),
+                    Hardware.BitState.ToString("X"),
+                    NewBitState.ToString("X"));
 
-                if (this.ParentWindow != null)
+                if (ParentWindow != null)
                 {
-                    this.ParentWindow.ListenerLogInfo(msgLog, Color.Orange);
+                    ParentWindow.ListenerLogInfo(msgLog, Color.Orange);
                 }
 
-                if (this.Hardware.GetNewBitStateValue(this.NewBitState) == this.Hardware.BitMask)
+                if (Hardware.GetNewBitStateValue(NewBitState) == Hardware.BitMask)
                 {
-                    this.Hardware.On();
+                    Hardware.On();
                 }
                 else
                 {
-                    this.Hardware.Off();
+                    Hardware.Off();
                 }
 
-                if(this.Hardware.GetType() == typeof(SimFan))
+                if (Hardware.GetType() == typeof(SimFan))
                 {
-                    SimFan fan = (SimFan)this.Hardware;
-                    fan.Speed = this.NewAnalogData;
+                    SimFan fan = (SimFan)Hardware;
+                    if (Hardware.IsOn)
+                    {
+                        fan.Speed = NewAnalogData;
+                    }
+                    else
+                    {
+                        fan.Speed = fan.Speed;
+                    }
                 }
 
                 //this.Hardware.BitState = this.Hardware.GetNewBitStateValue(this.NewBitState);
-                if (this.ParentWindow != null)
+                if (ParentWindow != null)
                 {
-                    this.ParentWindow.UpdateBitSetDgvData(this.Hardware.BitMask, this.Hardware.BitState);
+                    ParentWindow.UpdateBitSetDgvData(Hardware.BitMask, Hardware.BitState);
                 }
             }
         }

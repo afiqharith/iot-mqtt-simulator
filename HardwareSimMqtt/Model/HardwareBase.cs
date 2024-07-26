@@ -72,11 +72,7 @@ namespace HardwareSimMqtt.Model
             private set;
         }
 
-        public virtual bool IsOff
-        {
-            get;
-            private set;
-        }
+        public virtual bool IsOff => !IsOn;
 
         // Bit index for the hardware, bit map
         private uint _bitMask = 0;
@@ -101,7 +97,7 @@ namespace HardwareSimMqtt.Model
             set => SetAnalogDataProperty(ref _analogData, value);
         }
 
-        private IComController ComController
+        protected IComController ComController
         {
             get;
             set;
@@ -111,31 +107,31 @@ namespace HardwareSimMqtt.Model
         public HardwareBase(string id, eBitMask mask, eHardwareType type, eGroup group, eIoType ioType, int ioPort)
         {
 #if !SIMULATE
-            this.ComController = new HHGPIOController(ioType, ioPort);
+            ComController = new HHGPIOController(ioType, ioPort);
 #else
-            this.ComController = new HHEmuGPIOController(ioType, ioPort);
+            ComController = new HHEmuGPIOController(ioType, ioPort);
 #endif
-            this.Type = type;
-            this.Group = group;
-            this.Id = id;
-            this.BitMask = (uint)mask;
+            Type = type;
+            Group = group;
+            Id = id;
+            BitMask = (uint)mask;
 
         }
 
         //Using SerialPort
         public HardwareBase(string id, eBitMask mask, eHardwareType type, eGroup group, eIoType ioType, string portName, int baudRate = 9600)
         {
-            this.ComController = new HHSerialPortController(ioType, portName, baudRate);
-            this.Id = id;
-            this.BitMask = (uint)mask;
-            this.Type = type;
-            this.Group = group;
+            ComController = new HHSerialPortController(ioType, portName, baudRate);
+            Id = id;
+            BitMask = (uint)mask;
+            Type = type;
+            Group = group;
         }
 
         private void SetIdProperty(ref string id, string newval)
         {
             string createdId = String.Empty;
-            switch (this.Type)
+            switch (Type)
             {
                 default:
                 case eHardwareType.LAMP:
@@ -161,40 +157,39 @@ namespace HardwareSimMqtt.Model
         {
             bitMask = newval;
             //Map with hardware bit
-            this.ComController.BitMask = newval;
+            ComController.BitMask = newval;
         }
 
         private void SetCurrentBitStateProperty(ref uint bitState, uint newval)
         {
             bitState = newval;
-            this.ComController.SendDigitalOutputCommand(this.BitState);
-            this.IsOn = GetNewBitStateValue(this.BitState) == this.BitMask;
-            this.IsOff = !this.IsOn;
+            ComController.SendDigitalOutputCommand(BitState);
+            IsOn = GetNewBitStateValue(BitState) == BitMask;
         }
 
         private void SetAnalogDataProperty(ref int data, int newval)
         {
             data = newval;
-            this.ComController.SendAnalogOutputCommand(data);
+            ComController.SendAnalogOutputCommand(AnalogData);
         }
 
-        public virtual uint GetNewBitStateValue(uint newBitState) => this.BitMask & newBitState;
+        public virtual uint GetNewBitStateValue(uint newBitState) => BitMask & newBitState;
 
-        public virtual void On() => this.BitState = GetNewBitStateValue(this.BitMask);
+        public virtual void On() => BitState = GetNewBitStateValue(BitMask);
 
-        public virtual void Off() => this.BitState = GetNewBitStateValue(~this.BitMask);
+        public virtual void Off() => BitState = GetNewBitStateValue(~BitMask);
 
         public virtual bool Connect()
         {
             int iAttempt = 0;
             int elapsedTime = 0;
             int timeStart = Environment.TickCount;
-            while (!this.IsConnected && iAttempt < 3)
+            while (!IsConnected && iAttempt < 3)
             {
                 try
                 {
                     //Attempt hardware connection here
-                    this.IsConnected = this.ComController.OpenPort();
+                    IsConnected = ComController.OpenPort();
                 }
                 catch
                 {
@@ -206,17 +201,39 @@ namespace HardwareSimMqtt.Model
             if (IsConnected && iAttempt == 1) //Only log when there is attempt to connect, otherwise it already connect
             {
                 elapsedTime = Environment.TickCount - timeStart;
-                Debug.WriteLine(String.Format("{0} connected. Bit: 0x{1:D4}, Elapsed: {2}ms", this.Id, this.BitMask.ToString("X"), elapsedTime));
+                Debug.WriteLine(String.Format("{0} connected. Bit: 0x{1:D4}, Elapsed: {2}ms", Id, BitMask.ToString("X"), elapsedTime));
             }
 
             if (iAttempt > 2)
             {
                 elapsedTime = Environment.TickCount - timeStart;
-                string exLog = String.Format("{0} Failed {1} attempt to connect. Bit: 0x{1:D4}, Elapsed: {2}ms", this.Id, iAttempt, this.BitMask.ToString("X"), elapsedTime);
+                string exLog = String.Format("{0} Failed {1} attempt to connect. Bit: 0x{1:D4}, Elapsed: {2}ms", Id, iAttempt, BitMask.ToString("X"), elapsedTime);
                 Debug.WriteLine(exLog);
                 throw new Exception(exLog);
             }
             return IsConnected;
+        }
+
+        public virtual bool Update()
+        {
+            bool bSuccess = false;
+
+            if (IsConnected)
+            {
+                //Update digital I/O
+                {
+                    ComController.SendDigitalOutputCommand(BitState);
+                    IsOn = GetNewBitStateValue(BitState) == BitMask;
+                }
+
+                //Update analog I/O
+                {
+                    ComController.SendAnalogOutputCommand(AnalogData);
+                }
+                bSuccess = true;
+            }
+            Debug.WriteLine(String.Format("Unable to update, {0} is disconnected. Bit: 0x{1:D4}", Id, BitMask.ToString("X")));
+            return bSuccess;
         }
 
     }

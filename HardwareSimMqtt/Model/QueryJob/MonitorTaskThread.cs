@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using HardwareSimMqtt;
 
 namespace HardwareSimMqtt.Model.QueryJob
 {
@@ -41,19 +42,20 @@ namespace HardwareSimMqtt.Model.QueryJob
         }
 
         private void InitializeThread()
-        {
-            monitorJobQueryThread = new Thread(new ThreadStart(MonitorJobQuery));
+        {            
+            monitorJobQueryThread = new Thread(() => MonitorJobQuery(Program.CancelTokenSource.Token));
+            
             if (!monitorJobQueryThread.IsAlive)
             {
                 monitorJobQueryThread.Start();
             }
         }
 
-        public void MonitorJobQuery()
+        public void MonitorJobQuery(CancellationToken token)
         {
-            while (true)
+            while (!token.IsCancellationRequested)
             {
-                while (QueuedJob.Count > 0)
+                if (QueuedJob.Count > 0)
                 {
                     IJob taskJob = QueuedJob.Dequeue();
 

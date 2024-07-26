@@ -15,7 +15,7 @@ namespace HardwareSimMqtt.Model
             set => SetPanelProperty(ref _pPanel, value);
         }
 
-        private HardwareViewerGroup hardwareViewer { get; set; }
+        private UiHardwareViewerGroup hardwareViewer { get; set; }
 
         public override uint BitState
         {
@@ -42,12 +42,13 @@ namespace HardwareSimMqtt.Model
 
         private void SetPanelProperty(ref Panel panel, Panel newval) => panel = newval;
 
+        //Deprecated: Currently not in use
         public void BindWithUIComponent(Panel panel)
         {
             this.pPanel = panel;
         }
 
-        public void BindWithUiComponent(HardwareViewerGroup hardwareViewer)
+        public void BindWithUiComponent(UiHardwareViewerGroup hardwareViewer)
         {
             this.hardwareViewer = hardwareViewer;
         }
