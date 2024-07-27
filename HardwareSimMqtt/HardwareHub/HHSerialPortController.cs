@@ -46,11 +46,11 @@ namespace HardwareSimMqtt.HardwareHub
 
         public HHSerialPortController(eIoType ioType, string portName, int baudRate)
         {
-            this.IoType = ioType;
-            this.ControllerType = eControllerType.SerialPort;
-            this.PortName = portName;
-            this.BaudRate = baudRate;
-            serialPort = new SerialPort(this.PortName, this.BaudRate);
+            IoType = ioType;
+            ControllerType = eControllerType.SerialPort;
+            PortName = portName;
+            BaudRate = baudRate;
+            serialPort = new SerialPort(PortName, BaudRate);
             serialPort.DataReceived += new SerialDataReceivedEventHandler(OnSerialDataReceived);
         }
 
@@ -87,7 +87,7 @@ namespace HardwareSimMqtt.HardwareHub
         {
             if (serialPort.IsOpen)
             {
-                uint newBitState = this.BitMask & bitState;
+                uint newBitState = BitMask & bitState;
                 serialPort.Write(newBitState.ToString());
             }
         }

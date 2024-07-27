@@ -2,7 +2,7 @@
 
 namespace HardwareSimMqtt.Interface
 {
-    internal interface IJob
+    public interface IJob
     {
         HardwareBase Hardware
         {

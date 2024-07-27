@@ -12,24 +12,28 @@ namespace HardwareSimMqtt.Model
         private Panel pPanel
         {
             get => _pPanel;
-            set => SetPanelProperty(ref _pPanel, value);
+            set => _pPanel = value;
         }
 
-        private HardwareViewerGroup hardwareViewer { get; set; }
+        public UiHardwareViewerGroup HardwareViewer 
+        { 
+            get; 
+            set; 
+        }
 
         public override uint BitState
         {
             set
             {
                 base.BitState = value;
-                if (this.pPanel != null)
+                if (pPanel != null)
                 {
-                    this.pPanel.BackColor = GetUiBackColorIndicator(this.IsOn);
+                    pPanel.BackColor = GetUiBackColorIndicator(IsOn);
                 }
 
-                if (this.hardwareViewer != null)
+                if (HardwareViewer != null)
                 {
-                    this.hardwareViewer.ToggleUiLamp(this.IsOn);
+                    HardwareViewer.ToggleUiLamp(IsOn);
                 }
             }
         }
@@ -40,16 +44,10 @@ namespace HardwareSimMqtt.Model
         public SimLamp(string id, eBitMask mask, eGroup location, eIoType ioType, string portName, int baudRate)
             : base(id, mask, eHardwareType.LAMP, location, ioType, portName, baudRate) { }
 
-        private void SetPanelProperty(ref Panel panel, Panel newval) => panel = newval;
-
+        //Deprecated: Currently not in use
         public void BindWithUIComponent(Panel panel)
         {
-            this.pPanel = panel;
-        }
-
-        public void BindWithUiComponent(HardwareViewerGroup hardwareViewer)
-        {
-            this.hardwareViewer = hardwareViewer;
+            pPanel = panel;
         }
 
         private Color GetUiBackColorIndicator(bool isOn) => isOn ? Color.Green : Color.Gray;

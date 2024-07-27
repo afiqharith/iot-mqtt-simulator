@@ -1,6 +1,6 @@
 ﻿namespace HardwareSimMqtt.UIComponent
 {
-    partial class HardwareControllerGroup
+    partial class UiHardwareControllerGroup
     {
         /// <summary> 
         /// Required designer variable.

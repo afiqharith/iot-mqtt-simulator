@@ -12,10 +12,21 @@ namespace HardwareSimMqtt.HardwareHub
             set;
         }
 
+        private int _ioPort;
         private int IoPort
         {
-            get;
-            set;
+            get => _ioPort;
+            set
+            {
+                if (value != -1)
+                {
+                    _ioPort = value;
+                }
+                else
+                {
+                    throw new Exception(String.Format("Invalid I/O port number: {0}", value));
+                }
+            }
         }
 
         public virtual eControllerType ControllerType
