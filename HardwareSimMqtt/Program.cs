@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HardwareSimMqtt.HardwareHub;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -19,6 +20,19 @@ namespace HardwareSimMqtt
                     _wnd = new ListenerWindow();
                 }
                 return _wnd;
+            }
+        }
+
+        private static CentralController _centralController;
+        public static CentralController CentralController
+        {
+            get
+            {
+                if(_centralController == null)
+                {
+                    _centralController = new CentralController();
+                }
+                return _centralController;
             }
         }
 

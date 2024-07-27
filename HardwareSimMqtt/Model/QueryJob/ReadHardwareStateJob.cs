@@ -29,42 +29,36 @@ namespace HardwareSimMqtt.Model.QueryJob
             set;
         }
 
-        private ListenerWindow Window
+        private ListenerWindow ParentWindow
         {
-            get;
-            set;
+            get => Program.WndHandle;
         }
 
         public ReadHardwareStateJob(HardwareBase hardware)
         {
-            this.Hardware = hardware;
-        }
-
-        public ReadHardwareStateJob(ListenerWindow window, HardwareBase hardware)
-        {
-            this.Window = window;
-            this.Hardware = hardware;
+            Hardware = hardware;
         }
 
         public virtual void Run()
         {
-            bool bRet = this.Hardware.Connect();
+            bool bRet = Hardware.Connect();
 
             if (bRet)
             {
-                this.BitState = this.Hardware.BitState;
-                this.AnalogData = this.Hardware.AnalogData;
+                BitState = Hardware.BitState;
+                AnalogData = Hardware.AnalogData;
 
-                Color color = ((this.BitState & this.Hardware.BitState) != 0) ? Color.Green : Color.OrangeRed;
+                Color color = ((BitState & Hardware.BitState) != 0) ? Color.Green : Color.OrangeRed;
 
                 String msgLog = String.Format("ReadHardwareStateJob. HWID: {0}, mask bit: 0x{1:D4}, current state bit 0x{2:D4}",
-                    this.Hardware.Id,
-                    this.Hardware.BitMask.ToString("X"),
-                    this.BitState.ToString("X"));
+                    Hardware.Id,
+                    Hardware.BitMask.ToString("X"),
+                    BitState.ToString("X"));
 
-                if (this.Window != null)
+                if (ParentWindow != null)
                 {
-                    this.Window.ListenerLogInfo(msgLog, color);
+                    ParentWindow.UpdateBitSetDgvData(Hardware.BitMask, BitState);
+                    ParentWindow.ListenerLogInfo(msgLog, color);
                 }
             }
         }

@@ -17,45 +17,53 @@ namespace HardwareSimMqtt.UIComponent
         public eGroup GroupLocation
         {
             get => _egroup;
-            set => SetGroupLocationProperty(ref _egroup, value);
+            set
+            {
+                _egroup = value;
+                GroupBoxLoc.Text = String.Format("Group Loc{0}", (int)value);
+            }
         }
+        public string DisplayLampId
+        {
+            get => LabelLampId.Text;
+            set
+            {
+                LabelLampId.Text = value;
+                LabelLampId.Tag = value;
+            }
+        }
+
+        public string DisplayFanId
+        {
+            get => LabelFanId.Text;
+            set
+            {
+                LabelFanId.Text = value;
+                LabelFanId.Tag = value;
+            }
+        }
+
+        public string DisplayFanSpeed
+        {
+            get => LabelFanSpeed.Text;
+            set
+            {
+                SystemHelper.SafeInvoke(LabelFanSpeed, () =>
+                {
+                    LabelFanSpeed.Text = String.Format("{0}rpm", value);
+                });
+            }
+        }
+
         public UiHardwareViewerGroup(eGroup egroup)
         {
             InitializeComponent();
-            this.GroupLocation = egroup;
+            GroupLocation = egroup;
         }
 
         public UiHardwareViewerGroup()
         {
             InitializeComponent();
-        }
-
-        private void SetGroupLocationProperty(ref eGroup _group, eGroup newval)
-        {
-            _group = newval;
-            GroupBoxLoc.Text = String.Format("Group Loc{0}", (int)newval);
-        }
-
-        public void BindLampId(string id)
-        {
-            LabelLampId.Text = String.Format("Lamp ID{0}", (int)this.GroupLocation);
-            LabelLampId.Tag = id;
-        }
-
-        public void BindFanId(string id)
-        {
-            LabelFanId.Text = String.Format("Fan ID{0}", (int)this.GroupLocation);
-            LabelFanId.Tag = id;
-        }
-
-        public void BindACId(string id)
-        {
-
-        }
-
-        public void BindGateId(string id)
-        {
-
         }
 
         public void ToggleUiLamp(bool isOn)

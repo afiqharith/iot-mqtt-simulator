@@ -91,7 +91,7 @@
             this.LabelFanSpeed.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.LabelFanSpeed.AutoSize = true;
             this.LabelFanSpeed.Font = new System.Drawing.Font("Courier New", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.LabelFanSpeed.Location = new System.Drawing.Point(62, 3);
+            this.LabelFanSpeed.Location = new System.Drawing.Point(32, 21);
             this.LabelFanSpeed.Name = "LabelFanSpeed";
             this.LabelFanSpeed.Size = new System.Drawing.Size(30, 12);
             this.LabelFanSpeed.TabIndex = 9;
@@ -103,20 +103,20 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.LabelFanId.AutoSize = true;
-            this.LabelFanId.Location = new System.Drawing.Point(25, 14);
+            this.LabelFanId.Location = new System.Drawing.Point(25, 8);
             this.LabelFanId.Name = "LabelFanId";
             this.LabelFanId.Size = new System.Drawing.Size(45, 13);
             this.LabelFanId.TabIndex = 8;
             this.LabelFanId.Text = "Fan ID1";
             // 
-            // HardwareViewerGroup
+            // UiHardwareViewerGroup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.Controls.Add(this.GroupBoxLoc);
-            this.Name = "HardwareViewerGroup";
+            this.Name = "UiHardwareViewerGroup";
             this.Size = new System.Drawing.Size(111, 114);
             this.GroupBoxLoc.ResumeLayout(false);
             this.splitContainerMain.Panel1.ResumeLayout(false);
@@ -134,7 +134,7 @@
         private System.Windows.Forms.GroupBox GroupBoxLoc;
         private System.Windows.Forms.Label LabelLampId;
         public System.Windows.Forms.SplitContainer splitContainerMain;
-        public System.Windows.Forms.Label LabelFanId;
-        public System.Windows.Forms.Label LabelFanSpeed;
+        private System.Windows.Forms.Label LabelFanId;
+        private System.Windows.Forms.Label LabelFanSpeed;
     }
 }

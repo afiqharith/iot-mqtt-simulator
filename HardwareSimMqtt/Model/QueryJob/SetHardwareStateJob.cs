@@ -17,13 +17,13 @@ namespace HardwareSimMqtt.Model.QueryJob
             private set;
         }
 
-        public uint NewBitState
+        public uint RequestBitState
         {
             get;
             private set;
         }
 
-        public int NewAnalogData
+        public int RequestAnalogData
         {
             get;
             private set;
@@ -31,32 +31,30 @@ namespace HardwareSimMqtt.Model.QueryJob
 
         private ListenerWindow ParentWindow
         {
-            get;
-            set;
+            get => Program.WndHandle;
         }
 
-        public SetHardwareStateJob(HardwareBase hardware, uint newBitState = 0, int newAnalogData = -1)
+        public SetHardwareStateJob(HardwareBase hardware, uint requestBitState = 0, int requestAnalogData = -1)
         {
             Hardware = hardware;
-            NewBitState = newBitState;
-            NewAnalogData = newAnalogData;
+            RequestBitState = requestBitState;
+            RequestAnalogData = requestAnalogData;
         }
 
-        public SetHardwareStateJob(ListenerWindow parentWindow, HardwareBase hardware, uint newBitState = 0, int newAnalogData = -1)
+        public SetHardwareStateJob(HardwareBase hardware, bool requestBoolState = false, int requestAnalogData = -1)
         {
-            ParentWindow = parentWindow;
             Hardware = hardware;
-            NewBitState = newBitState;
-            NewAnalogData = newAnalogData;
+            RequestBitState = requestBoolState ? Hardware.GetNewBitStateValue(Hardware.BitMask) : Hardware.GetNewBitStateValue(~Hardware.BitMask);
+            RequestAnalogData = requestAnalogData;
         }
 
         public virtual void Run()
         {
             bool bRet = this.Hardware.Connect();
 
-            if (Hardware.BitState == NewBitState)
+            if (Hardware.BitState == RequestBitState)
             {
-                bRet = false;
+                //bRet = false;
             }
 
             if (bRet)
@@ -65,14 +63,14 @@ namespace HardwareSimMqtt.Model.QueryJob
                     Hardware.Id,
                     Hardware.BitMask.ToString("X"),
                     Hardware.BitState.ToString("X"),
-                    NewBitState.ToString("X"));
+                    RequestBitState.ToString("X"));
 
                 if (ParentWindow != null)
                 {
                     ParentWindow.ListenerLogInfo(msgLog, Color.Orange);
                 }
 
-                if (Hardware.GetNewBitStateValue(NewBitState) == Hardware.BitMask)
+                if (Hardware.GetNewBitStateValue(RequestBitState) == Hardware.BitMask)
                 {
                     Hardware.On();
                 }
@@ -86,7 +84,7 @@ namespace HardwareSimMqtt.Model.QueryJob
                     SimFan fan = (SimFan)Hardware;
                     if (Hardware.IsOn)
                     {
-                        fan.Speed = NewAnalogData;
+                        fan.Speed = RequestAnalogData;
                     }
                     else
                     {
@@ -95,10 +93,6 @@ namespace HardwareSimMqtt.Model.QueryJob
                 }
 
                 //this.Hardware.BitState = this.Hardware.GetNewBitStateValue(this.NewBitState);
-                if (ParentWindow != null)
-                {
-                    ParentWindow.UpdateBitSetDgvData(Hardware.BitMask, Hardware.BitState);
-                }
             }
         }
     }

@@ -18,7 +18,55 @@ namespace HardwareSimMqtt.UIComponent
         public eGroup GroupLocation
         {
             get => _egroup;
-            set => SetGroupLocationProperty(ref _egroup, value);
+            set
+            {
+                _egroup = value;
+                GroupBoxLoc.Text = String.Format("Group Loc{0}", (int)value);
+            }
+        }
+
+        public string CheckBoxLampId
+        {
+            get => CheckBoxLamp.Text;
+            set
+            {
+                CheckBoxLamp.Text = String.Format("Lamp ID{0}", (int)GroupLocation);
+                CheckBoxLamp.Tag = value;
+                CheckBoxLamp.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
+            }
+        }
+
+        private eBitMask _checkBoxLampMask;
+        public eBitMask CheckBoxLampMask
+        {
+            get => _checkBoxLampMask;
+            set
+            {
+                _checkBoxLampMask = value;
+                checkBoxMaskMap.Add(CheckBoxLamp, value);
+            }
+        }
+
+        public string CheckBoxFanId
+        {
+            get => CheckBoxFan.Text;
+            set
+            {
+                CheckBoxFan.Text = String.Format("Fan ID{0}", (int)GroupLocation);
+                CheckBoxFan.Tag = value;
+                CheckBoxFan.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
+            }
+        }
+
+        private eBitMask _checkBoxFanMask;
+        public eBitMask CheckBoxFanMask
+        {
+            get => _checkBoxFanMask;
+            set
+            {
+                _checkBoxFanMask = value;
+                checkBoxMaskMap.Add(CheckBoxFan, value);
+            }
         }
 
         private Dictionary<CheckBox, eBitMask> checkBoxMaskMap
@@ -29,42 +77,16 @@ namespace HardwareSimMqtt.UIComponent
 
         private ListenerWindow ParentWindow
         {
-            get;
-            set;
+            get => Program.WndHandle;
         }
 
         public UiHardwareControllerGroup(eGroup egroup)
         {
             InitializeComponent();
-            ParentWindow = Program.WndHandle;
             GroupLocation = egroup;
             CheckBoxBoth.Text = "Both";
             CheckBoxBoth.CheckStateChanged += new EventHandler(CheckboxBoth_OnCheckStateChanged);
             checkBoxMaskMap = new Dictionary<CheckBox, eBitMask>();
-        }
-
-        private void SetGroupLocationProperty(ref eGroup _group, eGroup newval)
-        {
-            _group = newval;
-            GroupBoxLoc.Text = String.Format("Group Loc{0}", (int)newval);
-        }
-
-        public void BindCheckboxLampId(string id, eBitMask mask)
-        {
-            CheckBoxLamp.Text = String.Format("Lamp ID{0}", (int)this.GroupLocation); ;
-            CheckBoxLamp.Tag = id;
-            CheckBoxLamp.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
-
-            checkBoxMaskMap.Add(this.CheckBoxLamp, mask);
-        }
-
-        public void BindCheckboxFanId(string id, eBitMask mask)
-        {
-            CheckBoxFan.Text = String.Format("Fan ID{0}", (int)this.GroupLocation);
-            CheckBoxFan.Tag = id;
-            CheckBoxFan.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
-
-            checkBoxMaskMap.Add(this.CheckBoxFan, mask);
         }
 
         private void CheckboxUnit_OnCheckStateChanged(object sender, EventArgs e)

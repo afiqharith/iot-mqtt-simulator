@@ -30,14 +30,14 @@ namespace HardwareSimMqtt.Model.QueryJob
 
         public MonitorTaskThread(Dictionary<uint, HardwareBase> hardwareMap)
         {
-            this.QueuedJob = new PriorityQueue<IJob>();
-            this.HardwareMap = hardwareMap;
+            QueuedJob = new PriorityQueue<IJob>();
+            HardwareMap = hardwareMap;
             InitializeThread();
         }
 
         public MonitorTaskThread()
         {
-            this.QueuedJob = new PriorityQueue<IJob>();
+            QueuedJob = new PriorityQueue<IJob>();
             InitializeThread();
         }
 

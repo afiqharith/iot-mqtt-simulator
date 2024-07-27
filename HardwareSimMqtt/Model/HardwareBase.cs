@@ -45,7 +45,30 @@ namespace HardwareSimMqtt.Model
         public virtual string Id
         {
             get => _id;
-            protected set => SetIdProperty(ref _id, value);
+            protected set
+            {
+                string createdId = String.Empty;
+                switch (Type)
+                {
+                    default:
+                    case eHardwareType.LAMP:
+                        createdId = String.Format("HWLID{0}", value);
+                        break;
+
+                    case eHardwareType.FAN:
+                        createdId = String.Format("HWFID{0}", value);
+                        break;
+
+                    case eHardwareType.AIR_CONDITIONER:
+                        createdId = String.Format("HWACID{0}", value);
+                        break;
+
+                    case eHardwareType.GATE:
+                        createdId = String.Format("HWGID{0}", value);
+                        break;
+                }
+                _id = createdId;
+            }
         }
 
         public virtual eHardwareType Type
@@ -79,7 +102,12 @@ namespace HardwareSimMqtt.Model
         public virtual uint BitMask
         {
             get => _bitMask;
-            protected set => SetBitMaskProperty(ref _bitMask, value);
+            protected set
+            {
+                _bitMask = value;
+                //Map with hardware bit
+                ComController.BitMask = value;
+            }
         }
 
         // Bit state of the hardware at the bit index
@@ -87,14 +115,23 @@ namespace HardwareSimMqtt.Model
         public virtual uint BitState
         {
             get => _bitState;
-            set => SetCurrentBitStateProperty(ref _bitState, value);
+            set
+            {
+                _bitState = value;
+                ComController.SendDigitalOutputCommand(value);
+                IsOn = GetNewBitStateValue(value) == BitMask;
+            }
         }
 
         private int _analogData = -1;
         public virtual int AnalogData
         {
             get => _analogData;
-            set => SetAnalogDataProperty(ref _analogData, value);
+            set
+            {
+                _analogData = value;
+                ComController.SendAnalogOutputCommand(value);
+            }
         }
 
         protected IComController ComController
@@ -109,68 +146,29 @@ namespace HardwareSimMqtt.Model
 #if !SIMULATE
             ComController = new HHGPIOController(ioType, ioPort);
 #else
-            ComController = new HHEmuGPIOController(ioType, ioPort);
+            //ComController = new HHEmuGPIOController(ioType, ioPort);
+            Program.CentralController.HardwareComMap.Add((uint)mask, new HardwareComm(this, new HHEmuGPIOController(ioType, ioPort)));
+            ComController = Program.CentralController.GetComController((uint)mask);
 #endif
             Type = type;
             Group = group;
             Id = id;
             BitMask = (uint)mask;
 
+
         }
 
         //Using SerialPort
         public HardwareBase(string id, eBitMask mask, eHardwareType type, eGroup group, eIoType ioType, string portName, int baudRate = 9600)
         {
-            ComController = new HHSerialPortController(ioType, portName, baudRate);
+            //ComController = new HHSerialPortController(ioType, portName, baudRate);
+            Program.CentralController.HardwareComMap.Add((uint)mask, new HardwareComm(this, new HHSerialPortController(ioType, portName, baudRate)));
+            ComController = Program.CentralController.GetComController((uint)mask);
+            
             Id = id;
             BitMask = (uint)mask;
             Type = type;
             Group = group;
-        }
-
-        private void SetIdProperty(ref string id, string newval)
-        {
-            string createdId = String.Empty;
-            switch (Type)
-            {
-                default:
-                case eHardwareType.LAMP:
-                    createdId = String.Format("HWLID{0}", newval);
-                    break;
-
-                case eHardwareType.FAN:
-                    createdId = String.Format("HWFID{0}", newval);
-                    break;
-
-                case eHardwareType.AIR_CONDITIONER:
-                    createdId = String.Format("HWACID{0}", newval);
-                    break;
-
-                case eHardwareType.GATE:
-                    createdId = String.Format("HWGID{0}", newval);
-                    break;
-            }
-            id = createdId;
-        }
-
-        private void SetBitMaskProperty(ref uint bitMask, uint newval)
-        {
-            bitMask = newval;
-            //Map with hardware bit
-            ComController.BitMask = newval;
-        }
-
-        private void SetCurrentBitStateProperty(ref uint bitState, uint newval)
-        {
-            bitState = newval;
-            ComController.SendDigitalOutputCommand(BitState);
-            IsOn = GetNewBitStateValue(BitState) == BitMask;
-        }
-
-        private void SetAnalogDataProperty(ref int data, int newval)
-        {
-            data = newval;
-            ComController.SendAnalogOutputCommand(AnalogData);
         }
 
         public virtual uint GetNewBitStateValue(uint newBitState) => BitMask & newBitState;

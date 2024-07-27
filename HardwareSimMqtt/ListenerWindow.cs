@@ -1,5 +1,4 @@
-﻿#define USETHREAD
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -58,7 +57,8 @@ namespace HardwareSimMqtt
 
         private DataTable bitSetDataTable
         {
-            get; set;
+            get; 
+            set;
         }
 
         private uint realTimeBitSet
@@ -105,32 +105,20 @@ namespace HardwareSimMqtt
                 this.bitInfoList = bitInfoList;
             }
         }
-
-#if USETHREAD
         private MonitorTaskThread monitorJobThread
         {
             get;
             set;
         }
-#else
-        private Queue<IJob> queriedJob
-        {
-            get;
-            set;
-        }
-#endif
+
         public ListenerWindow()
         {
             InitializeComponent();
             InititalizeListnerWindow();
             InitializePartialListenerWindow();
-            this.FormClosing += (sender, e) => DisconnectBrokerConnection();
-            this.FormClosed += (sender, e) => DisconnectBrokerConnection();
-#if USETHREAD
+            FormClosing += (sender, e) => DisconnectBrokerConnection();
+            FormClosed += (sender, e) => DisconnectBrokerConnection();
             monitorJobThread = new MonitorTaskThread();
-#else
-            queriedJob = new Queue<IJob>();
-#endif
         }
 
         private void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
@@ -174,10 +162,6 @@ namespace HardwareSimMqtt
 
         private void InitializeHardwareBitMap()
         {
-            CentralController centralController = new CentralController();
-            Dictionary<uint, HardwareComm> hardwareCommMap = new Dictionary<uint, HardwareComm>();
-
-
             simHardwareMap = new Dictionary<uint, HardwareBase>();
 
             Dictionary<eGroup, UiHardwareViewerGroup> uiHardwareViewerMap = new Dictionary<eGroup, UiHardwareViewerGroup>();
@@ -249,8 +233,6 @@ namespace HardwareSimMqtt
                         {
                             unitSimHardware = new HardwareBase(id, ebitMask, ehardwaretype, egroup, ioType, ioPort);
                         }
-                        //hardwareCommMap.Add(Convert.ToUInt32(bit), new HardwareComm(unitSimHardware, new HHGPIOController(ioType, ioPort)));
-                        hardwareCommMap.Add(Convert.ToUInt32(bit), new HardwareComm(unitSimHardware, new HHEmuGPIOController(ioType, ioPort)));
                     }
                     else if (econtrollerType == eControllerType.SerialPort)
                     {
@@ -268,7 +250,6 @@ namespace HardwareSimMqtt
                         {
                             unitSimHardware = new HardwareBase(id, ebitMask, ehardwaretype, egroup, ioType, comPort, baudRate);
                         }
-                        hardwareCommMap.Add(Convert.ToUInt32(bit), new HardwareComm(unitSimHardware, new HHSerialPortController(ioType, comPort, baudRate)));
                     }
                     else
                     {
@@ -301,24 +282,28 @@ namespace HardwareSimMqtt
                     if (unitSimHardware != null)
                     {
                         Type hwType = unitSimHardware.GetType();
+                        //Bind hardware details to UI controller and viewer
                         if (egroup != eGroup.Non)
                         {
                             if (hwType == typeof(SimLamp))
                             {
-                                uiHardwareViewerMap[egroup].BindLampId(unitSimHardware.Id);
-                                uiHardwareControllerMap[egroup].BindCheckboxLampId(unitSimHardware.Id, (eBitMask)unitSimHardware.BitMask);
-                                ((SimLamp)unitSimHardware).BindWithUiComponent(uiHardwareViewerMap[egroup]);
+                                uiHardwareViewerMap[egroup].DisplayLampId = unitSimHardware.Id;
+                                ((SimLamp)unitSimHardware).HardwareViewer = uiHardwareViewerMap[egroup];
+
+                                uiHardwareControllerMap[egroup].CheckBoxLampId = unitSimHardware.Id;
+                                uiHardwareControllerMap[egroup].CheckBoxLampMask = (eBitMask)unitSimHardware.BitMask;
+
                             }
                             else if (hwType == typeof(SimFan))
                             {
-                                uiHardwareViewerMap[egroup].BindFanId(unitSimHardware.Id);
-                                uiHardwareControllerMap[egroup].BindCheckboxFanId(unitSimHardware.Id, (eBitMask)unitSimHardware.BitMask);
-                                ((SimFan)unitSimHardware).BindWithUiComponent(uiHardwareViewerMap[egroup]);
+                                uiHardwareViewerMap[egroup].DisplayFanId = unitSimHardware.Id;
+                                ((SimFan)unitSimHardware).HardwareViewer = uiHardwareViewerMap[egroup];
+
+                                uiHardwareControllerMap[egroup].CheckBoxFanId = unitSimHardware.Id;
+                                uiHardwareControllerMap[egroup].CheckBoxFanMask = (eBitMask)unitSimHardware.BitMask;
                             }
                         }
-
                         simHardwareMap.Add(Convert.ToUInt32(bit), unitSimHardware);
-                        centralController.Initialize(hardwareCommMap);
                     }
                 }
 
@@ -343,11 +328,9 @@ namespace HardwareSimMqtt
                 hardwareControllerFlowLayoutPanel.Controls.Add(kvp.Value);
             }
             hardwareControllerFlowLayoutPanel.Controls.Add(checkboxAll);
-
-#if USETHREAD
             monitorJobThread.HardwareMap = simHardwareMap;
-#endif
-            //Do connection attempt
+            
+            //Force do connection attempt
             foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
             {
                 if (!kvp.Value.IsConnected)
@@ -423,7 +406,9 @@ namespace HardwareSimMqtt
                 case STATE.PU_SET_SIM_HARDWARE_INIT_STATE:
                     foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
                     {
-                        kvp.Value.Off();
+                        //kvp.Value.Off();
+
+                        monitorJobThread.QueuedJob.Enqueue(new SetHardwareStateJob(kvp.Value, false), 1);
                     }
                     iAutoNextStep = STATE.PU_COMPLETE;
                     break;
@@ -471,18 +456,12 @@ namespace HardwareSimMqtt
 
                 case STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE:
                     TranslatePacketReceived();
-#if !USETHREAD
-                    iAutoNextStep = queriedJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
-#else
                     iAutoNextStep = monitorJobThread.QueuedJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     //Debug.WriteLine(monitorJobThread.QueuedJob.ToString());
-#endif
                     break;
 
                 case STATE.AUTO_UPDATE_HARDWARE_STATE:
-#if !USETHREAD
-                    MonitorJobQueryThread();
-#endif
+                    //Task query thread will update the hardware state
                     iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
@@ -508,11 +487,7 @@ namespace HardwareSimMqtt
                         {
                             if (kvp.Value.Id == packetReceived.bitInfoList[i].Id)
                             {
-#if !USETHREAD
-                                queriedJob.Enqueue(new SetHardwareStateJob(this, kvp.Value, packetReceived.bitInfoList[i].BitState, 3000));
-#else
-                                monitorJobThread.QueuedJob.Enqueue(new SetHardwareStateJob(this, kvp.Value, packetReceived.bitInfoList[i].BitState, 1000), 1);
-#endif
+                                monitorJobThread.QueuedJob.Enqueue(new SetHardwareStateJob(kvp.Value, packetReceived.bitInfoList[i].BitState, 1000), 1);
                                 string log = String.Format("TranslatePacketReceived. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}", packetReceived.bitInfoList[i].Id, kvp.Value.BitMask.ToString("X"), packetReceived.bitInfoList[i].BitState.ToString("X"));
                                 ListenerLogInfo(log, Color.Blue);
                                 translatedPacketCount++;
@@ -524,45 +499,6 @@ namespace HardwareSimMqtt
             return translatedPacketCount;
         }
 
-#if !USETHREAD
-        private void MonitorJobQueryThread()
-        {
-            while (queriedJob.Count > 0)
-            {
-                IJob taskJob = queriedJob.Dequeue();
-
-                if (taskJob != null)
-                {
-                    if (taskJob.GetType() == typeof(SetHardwareStateJob))
-                    {
-                        SetHardwareStateJob setHardwareStateJob = (SetHardwareStateJob)taskJob;
-                        foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
-                        {
-                            if (kvp.Value.Id == setHardwareStateJob.Hardware.Id &&
-                                kvp.Value.BitState != setHardwareStateJob.NewBitState)
-                            {
-                                setHardwareStateJob.Run();
-                                queriedJob.Enqueue(new ReadHardwareStateJob(this, kvp.Value));
-                            }
-                        }
-                    }
-
-                    if (taskJob.GetType() == typeof(ReadHardwareStateJob))
-                    {
-                        ReadHardwareStateJob readHardwareStateJob = (ReadHardwareStateJob)taskJob;
-                        foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
-                        {
-                            if (kvp.Value.Id == readHardwareStateJob.Hardware.Id)
-                            {
-                                readHardwareStateJob.Run();
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
-#endif
         public void UpdateBitSetDgvData(uint bitMask, uint currentBitState)
         {
             for (int nCol = bitSetDataTable.Columns.Count - 1; nCol >= 0; nCol--)

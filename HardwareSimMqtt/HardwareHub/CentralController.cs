@@ -38,18 +38,21 @@ namespace HardwareSimMqtt.HardwareHub
 
         public CentralController() 
         {
-
+            HardwareComMap = new Dictionary<uint, HardwareComm>();
         }
 
         public CentralController(Dictionary<uint, HardwareComm> hardwareComMap)
         {
-            Initialize(hardwareComMap);
+            HardwareComMap = hardwareComMap;
         }
 
-
-        public void Initialize(Dictionary<uint, HardwareComm> hardwareComMap)
+        public IComController GetComController(uint bitmask)
         {
-            HardwareComMap = hardwareComMap;
+            if (!HardwareComMap.ContainsKey(bitmask) || HardwareComMap[bitmask] == null)
+            {
+                return null;
+            }
+            return HardwareComMap[bitmask].ComController;
         }
 
         public int SetBitState(uint bitmask, uint requestBitState)
