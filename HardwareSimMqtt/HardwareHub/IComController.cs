@@ -13,12 +13,12 @@ namespace HardwareSimMqtt.HardwareHub
             get;
             set;
         }
-        eControllerType ControllerType 
+        ControllerType ControllerType 
         { 
             get;
         }
 
-        eIoType IoType
+        IoType IoType
         {
             get;
         }
@@ -31,15 +31,19 @@ namespace HardwareSimMqtt.HardwareHub
         int GetAnalogInputValue();
     }
 
-    public enum eControllerType
+    [Flags]
+    public enum ControllerType
     {
+        Invalid = -1,
         GPIO,
         SerialPort,
         EmuGPIO,
+        GeneralGPIO = GPIO | EmuGPIO,
     }
 
-    public enum eIoType
+    public enum IoType
     {
+        Invalid = -1,
         DigitalInput,
         DigitalOutput,
         AnalogInput,

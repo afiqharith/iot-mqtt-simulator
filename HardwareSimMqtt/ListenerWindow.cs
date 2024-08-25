@@ -20,6 +20,7 @@ using HardwareSimMqtt.EventArgsModel;
 using System.Xml;
 using System.IO;
 using System.Diagnostics;
+using HardwareSimMqtt.Utils;
 
 namespace HardwareSimMqtt
 {
@@ -43,21 +44,38 @@ namespace HardwareSimMqtt
             set;
         }
 
-        protected Dictionary<uint, HardwareBase> simHardwareMap
+        private Dictionary<uint, DeviceBase> _simulatedDeviceDict = null;
+        protected Dictionary<uint, DeviceBase> simulatedDeviceDict
         {
-            get;
-            set;
+            get
+            {
+                if(_simulatedDeviceDict == null)
+                {
+                    _simulatedDeviceDict = new Dictionary<uint, DeviceBase>(); 
+                }
+                return _simulatedDeviceDict;
+            }
+            set => _simulatedDeviceDict = value;
         }
 
+
+        private Queue<PacketInfo> _queuePacketInfoReceived = null;
         private Queue<PacketInfo> queuePacketInfoReceived
         {
-            get;
-            set;
+            get
+            {
+                if(_queuePacketInfoReceived == null)
+                {
+                    _queuePacketInfoReceived = new Queue<PacketInfo>();
+                }
+                return _queuePacketInfoReceived;
+            }
+            set => queuePacketInfoReceived = value;
         }
 
         private DataTable bitSetDataTable
         {
-            get; 
+            get;
             set;
         }
 
@@ -73,14 +91,14 @@ namespace HardwareSimMqtt
             set;
         }
 
-        private STATE iLastSwitchStep
+        private AutoState iLastSwitchStep
         {
             get;
             set;
         }
 
-        private STATE _iAutoNextStep = 0;
-        private STATE iAutoNextStep
+        private AutoState _iAutoNextStep = 0;
+        private AutoState iAutoNextStep
         {
             get => _iAutoNextStep;
             set
@@ -96,19 +114,28 @@ namespace HardwareSimMqtt
         //Use when de-packet the data receive from broker
         private struct PacketInfo
         {
-            public string headerTopic;
-            public List<BitInfo> bitInfoList;
+            public string HeaderTopic;
+            public List<BitInfo> BitInfoList;
 
             public PacketInfo(string headerTopic, List<BitInfo> bitInfoList)
             {
-                this.headerTopic = headerTopic;
-                this.bitInfoList = bitInfoList;
+                HeaderTopic = headerTopic;
+                BitInfoList = bitInfoList;
             }
         }
-        private MonitorTaskThread monitorJobThread
+
+        private MonitorTaskThread _monitorTaskThread = null;
+        private MonitorTaskThread monitorTaskJobThread
         {
-            get;
-            set;
+            get
+            {
+                if(_monitorTaskThread == null)
+                {
+                    _monitorTaskThread = new MonitorTaskThread();
+                }
+                return _monitorTaskThread;
+            }
+            set => _monitorTaskThread = value;
         }
 
         public ListenerWindow()
@@ -118,7 +145,6 @@ namespace HardwareSimMqtt
             InitializePartialListenerWindow();
             FormClosing += (sender, e) => DisconnectBrokerConnection();
             FormClosed += (sender, e) => DisconnectBrokerConnection();
-            monitorJobThread = new MonitorTaskThread();
         }
 
         private void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
@@ -128,17 +154,21 @@ namespace HardwareSimMqtt
             queuePacketInfoReceived.Enqueue(new PacketInfo(e.Topic, bitInfoList.InfoList));
         }
 
-        public void ListenerLogInfo(string text, Color color)
+        public void LInfo(string text, Color color)
         {
-            string textTemp = String.Format("Step({0}) = {1}", (int)this.iAutoNextStep, text);
+            string textTemp = String.Format("Step({0}) = {1}", (int)iAutoNextStep, text);
             SystemHelper.AppendRichTextBox(richTextBox1, textTemp, color);
+        }
+
+        private void CInfo(string text, Color color)
+        {
+            SystemHelper.AppendRichTextBox(richTextBox2, text, color);
         }
 
         private void InititalizeListnerWindow()
         {
             //Listener
             isPowerUpFinish = false;
-            queuePacketInfoReceived = new Queue<PacketInfo>();
             InitializeBitSetDgv();
             InitializeSystemTimer();
 
@@ -160,183 +190,140 @@ namespace HardwareSimMqtt
             return true;
         }
 
-        private void InitializeHardwareBitMap()
+        private void InitializeDeviceBitMap()
         {
-            simHardwareMap = new Dictionary<uint, HardwareBase>();
-
-            Dictionary<eGroup, UiHardwareViewerGroup> uiHardwareViewerMap = new Dictionary<eGroup, UiHardwareViewerGroup>();
-            Dictionary<eGroup, UiHardwareControllerGroup> uiHardwareControllerMap = new Dictionary<eGroup, UiHardwareControllerGroup>();
+            Dictionary<DeviceGroup, UiDeviceViewerGroup> uiDeviceViewerDict = new Dictionary<DeviceGroup, UiDeviceViewerGroup>();
+            Dictionary<DeviceGroup, UiDeviceControllerGroup> uiDeviceControllerDict = new Dictionary<DeviceGroup, UiDeviceControllerGroup>();
 
             string xmlFilePath = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), ConfigurationManager.AppSettings.Get("HardwareConfigFile"));
-            XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.Load(xmlFilePath);
-            XmlNodeList settings = xmlDoc.SelectNodes("/configuration/bitmap/setting");
+            ConfigSetting configSetting = new ConfigSetting(xmlFilePath);
+            configSetting.Load();
 
-            for (int i = 0; i < settings.Count; i++)
+            for (int i = 0; i < configSetting.ConfigList.Count; i++)
             {
-                int bit = Convert.ToInt32(settings[i].Attributes["bit"].Value);
-                eBitMask ebitMask = (eBitMask)(1 << bit);
-
-                XmlNodeList details = settings[i].SelectNodes("detail");
-
-                if (details.Count != 0)
+                DevcieConfig deviceConfig = configSetting.ConfigList[i];
+                if (!Enum.IsDefined(typeof(DeviceBitMask), deviceConfig.BitMask))
                 {
-                    int ioPort = new int();
-                    eIoType ioType = new eIoType();
-                    eControllerType econtrollerType = new eControllerType();
-                    eHardwareType ehardwaretype = new eHardwareType();
-                    eGroup egroup = new eGroup();
-                    string id = String.Empty;
-                    for (int j = 0; j < details.Count; j++)
-                    {
-                        if (details[j].Attributes["name"].Value == "IOPort")
-                        {
-                            ioPort = Convert.ToInt32(details[j].Attributes["value"].Value);
-                        }
-                        else if (details[j].Attributes["name"].Value == "IOType")
-                        {
-                            ioType = (eIoType)Convert.ToInt32(details[j].Attributes["value"].Value);
-                        }
-                        else if (details[j].Attributes["name"].Value == "HardwareType")
-                        {
-                            ehardwaretype = (eHardwareType)Convert.ToInt32(details[j].Attributes["value"].Value);
-                        }
-                        else if (details[j].Attributes["name"].Value == "ControllerType")
-                        {
-                            econtrollerType = (eControllerType)Convert.ToInt32(details[j].Attributes["value"].Value);
-                        }
-                        else if (details[j].Attributes["name"].Value == "Group")
-                        {
-                            egroup = (eGroup)Convert.ToInt32(details[j].Attributes["value"].Value);
-                            id = Convert.ToString((int)egroup);
-                        }
-                        else
-                        {
-                            continue;
-                        }
-                    }
+                    continue;
+                }
+                DeviceBase unitDeviceSim;
 
-                    HardwareBase unitSimHardware;
-                    if (econtrollerType == eControllerType.GPIO)
-                    {
-                        //int ioPort = Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_IOPort", i)));
-
-                        if (ehardwaretype == eHardwareType.LAMP)
-                        {
-                            unitSimHardware = new SimLamp(id, ebitMask, egroup, ioType, ioPort);
-                        }
-                        else if (ehardwaretype == eHardwareType.FAN)
-                        {
-                            unitSimHardware = new SimFan(id, ebitMask, egroup, ioType, ioPort);
-                        }
-                        else
-                        {
-                            unitSimHardware = new HardwareBase(id, ebitMask, ehardwaretype, egroup, ioType, ioPort);
-                        }
-                    }
-                    else if (econtrollerType == eControllerType.SerialPort)
-                    {
-                        string comPort = ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_COMPort", i));
-                        int baudRate = Convert.ToInt32(ConfigurationManager.AppSettings.Get(String.Format("Bit{0}_BaudRate", i)));
-                        if (ehardwaretype == eHardwareType.LAMP)
-                        {
-                            unitSimHardware = new SimLamp(id, ebitMask, egroup, ioType, comPort, baudRate);
-                        }
-                        else if (ehardwaretype == eHardwareType.FAN)
-                        {
-                            unitSimHardware = new SimFan(id, ebitMask, egroup, ioType, comPort, baudRate);
-                        }
-                        else
-                        {
-                            unitSimHardware = new HardwareBase(id, ebitMask, ehardwaretype, egroup, ioType, comPort, baudRate);
-                        }
-                    }
-                    else
-                    {
-                        continue;
-                    }
-
-
-                    //Hardware viewer
-                    if (egroup != eGroup.Non &&
-                        (!uiHardwareViewerMap.ContainsKey(egroup) || uiHardwareViewerMap[egroup] == null))
-                    {
-                        uiHardwareViewerMap[egroup] = new UiHardwareViewerGroup(egroup);
-                    }
-                    else
-                    {
-                        //unit hardware viewer
-                    }
-
-                    //Hardware Controller
-                    if (egroup != eGroup.Non &&
-                        (!uiHardwareControllerMap.ContainsKey(egroup) || uiHardwareControllerMap[egroup] == null))
-                    {
-                        uiHardwareControllerMap[egroup] = new UiHardwareControllerGroup(egroup);
-                    }
-                    else
-                    {
-                        //unit hardware controller
-                    }
-
-                    if (unitSimHardware != null)
-                    {
-                        Type hwType = unitSimHardware.GetType();
-                        //Bind hardware details to UI controller and viewer
-                        if (egroup != eGroup.Non)
-                        {
-                            if (hwType == typeof(SimLamp))
-                            {
-                                uiHardwareViewerMap[egroup].DisplayLampId = unitSimHardware.Id;
-                                ((SimLamp)unitSimHardware).HardwareViewer = uiHardwareViewerMap[egroup];
-
-                                uiHardwareControllerMap[egroup].CheckBoxLampId = unitSimHardware.Id;
-                                uiHardwareControllerMap[egroup].CheckBoxLampMask = (eBitMask)unitSimHardware.BitMask;
-
-                            }
-                            else if (hwType == typeof(SimFan))
-                            {
-                                uiHardwareViewerMap[egroup].DisplayFanId = unitSimHardware.Id;
-                                ((SimFan)unitSimHardware).HardwareViewer = uiHardwareViewerMap[egroup];
-
-                                uiHardwareControllerMap[egroup].CheckBoxFanId = unitSimHardware.Id;
-                                uiHardwareControllerMap[egroup].CheckBoxFanMask = (eBitMask)unitSimHardware.BitMask;
-                            }
-                        }
-                        simHardwareMap.Add(Convert.ToUInt32(bit), unitSimHardware);
-                    }
+                if (deviceConfig.ControllerType == ControllerType.SerialPort)
+                {
+                    deviceConfig.ComPort = ConfigurationManager.AppSettings.Get("ComPort");
+                    deviceConfig.Baudrate = Convert.ToInt32(ConfigurationManager.AppSettings.Get("BaudRate"));
+                }
+                else if (deviceConfig.ControllerType == ControllerType.Invalid)
+                {
+                    continue;
                 }
 
+                switch (deviceConfig.DeviceType)
+                {
+                    case DeviceType.LAMP:
+                        unitDeviceSim = new SimLamp(deviceConfig);
+                        break;
+
+                    case DeviceType.FAN:
+                        unitDeviceSim = new SimFan(deviceConfig);
+                        break;
+
+                    default:
+                        unitDeviceSim = new DeviceBase(deviceConfig);
+                        break;
+                }
+
+                //Device viewer
+                if (deviceConfig.Group != DeviceGroup.Invalid &&
+                    (!uiDeviceViewerDict.ContainsKey(deviceConfig.Group) || uiDeviceViewerDict[deviceConfig.Group] == null))
+                {
+                    uiDeviceViewerDict[deviceConfig.Group] = new UiDeviceViewerGroup(deviceConfig.Group);
+                }
+                else
+                {
+                    //unit device viewer
+                }
+
+                //Device Controller
+                if (deviceConfig.Group != DeviceGroup.Invalid &&
+                    (!uiDeviceControllerDict.ContainsKey(deviceConfig.Group) || uiDeviceControllerDict[deviceConfig.Group] == null))
+                {
+                    uiDeviceControllerDict[deviceConfig.Group] = new UiDeviceControllerGroup(deviceConfig.Group);
+                }
+                else
+                {
+                    //unit device controller
+                }
+
+                if (unitDeviceSim != null)
+                {
+                    Type deviceObjectType = unitDeviceSim.GetType();
+                    //Bind device details to UI controller and viewer
+                    if (deviceConfig.Group != DeviceGroup.Invalid)
+                    {
+                        if (deviceObjectType == typeof(SimLamp))
+                        {
+                            uiDeviceViewerDict[deviceConfig.Group].DisplayLampId = unitDeviceSim.Id;
+                            ((SimLamp)unitDeviceSim).DeviceViewer = uiDeviceViewerDict[deviceConfig.Group];
+
+                            uiDeviceControllerDict[deviceConfig.Group].CheckBoxLampId = unitDeviceSim.Id;
+                            uiDeviceControllerDict[deviceConfig.Group].CheckBoxLampMask = (DeviceBitMask)unitDeviceSim.BitMask;
+
+                        }
+                        else if (deviceObjectType == typeof(SimFan))
+                        {
+                            uiDeviceViewerDict[deviceConfig.Group].DisplayFanId = unitDeviceSim.Id;
+                            ((SimFan)unitDeviceSim).DeviceViewer = uiDeviceViewerDict[deviceConfig.Group];
+
+                            uiDeviceControllerDict[deviceConfig.Group].CheckBoxFanId = unitDeviceSim.Id;
+                            uiDeviceControllerDict[deviceConfig.Group].CheckBoxFanMask = (DeviceBitMask)unitDeviceSim.BitMask;
+                        }
+                    }
+
+                    if (!simulatedDeviceDict.ContainsKey(Convert.ToUInt32(deviceConfig.Bit)))
+                    {
+                        simulatedDeviceDict.Add(Convert.ToUInt32(deviceConfig.Bit), unitDeviceSim);
+                    }
+                    else
+                    {
+                        simulatedDeviceDict[Convert.ToUInt32(deviceConfig.Bit)] = unitDeviceSim;
+                    }
+                }
             }
 
-            //Hardware Viewer
-            foreach (KeyValuePair<eGroup, UiHardwareViewerGroup> kvp in uiHardwareViewerMap)
+            //Device Viewer
+            foreach (KeyValuePair<DeviceGroup, UiDeviceViewerGroup> kvp in uiDeviceViewerDict)
             {
-                hardwareViewerFlowLayoutPanel.Controls.Add(kvp.Value);
+                deviceViewerFlowLayoutPanel.Controls.Add(kvp.Value);
             }
 
-            //Hardware Controller
+            //Device Controller
             CheckBox checkboxAll = new CheckBox
             {
                 Text = "All",
                 AutoSize = true
             };
 
-            foreach (KeyValuePair<eGroup, UiHardwareControllerGroup> kvp in uiHardwareControllerMap)
+            foreach (KeyValuePair<DeviceGroup, UiDeviceControllerGroup> kvp in uiDeviceControllerDict)
             {
                 checkboxAll.CheckStateChanged += new EventHandler(kvp.Value.CheckboxAll_OnCheckStateChanged);
-                hardwareControllerFlowLayoutPanel.Controls.Add(kvp.Value);
+                deviceControllerFlowLayoutPanel.Controls.Add(kvp.Value);
             }
-            hardwareControllerFlowLayoutPanel.Controls.Add(checkboxAll);
-            monitorJobThread.HardwareMap = simHardwareMap;
-            
+            deviceControllerFlowLayoutPanel.Controls.Add(checkboxAll);
+            monitorTaskJobThread.DeviceDict = simulatedDeviceDict;
+
             //Force do connection attempt
-            foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+            foreach (KeyValuePair<uint, DeviceBase> kvp in simulatedDeviceDict)
             {
-                if (!kvp.Value.IsConnected)
-                {
-                    kvp.Value.Connect();
-                }
+                //if (!kvp.Value.IsConnected)
+                //{
+                //    kvp.Value.Connect();
+                //}
+
+                IJob connectTaskJob = new ConnectDeviceJob(kvp.Value);
+                monitorTaskJobThread.QueuedJob.Enqueue(connectTaskJob, 1);
+                ((ConnectDeviceJob)connectTaskJob).WaitFinish();
+
             }
         }
 
@@ -344,7 +331,7 @@ namespace HardwareSimMqtt
         {
             bitSetDataTable = new DataTable();
 
-            int nColCount = Enum.GetNames(typeof(eBitMask)).Length;
+            int nColCount = Enum.GetNames(typeof(DeviceBitMask)).Length;
 
             for (int nCol = nColCount - 1; nCol >= 0; nCol--)
             {
@@ -362,12 +349,12 @@ namespace HardwareSimMqtt
 
         private void DisconnectBrokerConnection()
         {
-            if (listenerBrokerConnectJob.Client.IsConnected)
+            if (listenerBrokerConnectJob.Client != null || listenerBrokerConnectJob.Client.IsConnected)
             {
                 listenerBrokerConnectJob.Client.Disconnect();
             }
 
-            if (controllerBrokerConnectJob.Client.IsConnected)
+            if (controllerBrokerConnectJob.Client != null || controllerBrokerConnectJob.Client.IsConnected)
             {
                 controllerBrokerConnectJob.Client.Disconnect();
             }
@@ -386,7 +373,7 @@ namespace HardwareSimMqtt
         {
             switch (iAutoNextStep)
             {
-                case STATE.PU_SETUP_CONNECTION_WITH_BROKER:
+                case AutoState.PU_SETUP_CONNECTION_WITH_BROKER:
                     listenerBrokerConnectJob = new SetBrokerConnectJob("broker.emqx.io");
                     bool bEstablished = listenerBrokerConnectJob.Run();
                     if (!bEstablished)
@@ -395,44 +382,37 @@ namespace HardwareSimMqtt
                     }
                     listenerBrokerConnectJob.Client.MqttMsgPublishReceived += OnMessageReceived;
                     listenerBrokerConnectJob.Client.Subscribe(new string[] { TOPIC }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE });
-                    iAutoNextStep = STATE.PU_INIT_SIM_HARDWARE_INSTANCE;
+                    iAutoNextStep = AutoState.PU_INIT_SIM_DEVICE_INSTANCE;
                     break;
 
-                case STATE.PU_INIT_SIM_HARDWARE_INSTANCE:
-                    InitializeHardwareBitMap();
-                    iAutoNextStep = STATE.PU_SET_SIM_HARDWARE_INIT_STATE;
+                case AutoState.PU_INIT_SIM_DEVICE_INSTANCE:
+                    InitializeDeviceBitMap();
+                    iAutoNextStep = AutoState.PU_SET_SIM_DEVICE_INIT_STATE;
                     break;
 
-                case STATE.PU_SET_SIM_HARDWARE_INIT_STATE:
-                    foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+                case AutoState.PU_SET_SIM_DEVICE_INIT_STATE:
+                    foreach (KeyValuePair<uint, DeviceBase> kvp in simulatedDeviceDict)
                     {
                         //kvp.Value.Off();
-
-                        monitorJobThread.QueuedJob.Enqueue(new SetHardwareStateJob(kvp.Value, false), 1);
+                        monitorTaskJobThread.QueuedJob.Enqueue(new SetDeviceStateJob(kvp.Value, false), 1);
                     }
-                    iAutoNextStep = STATE.PU_COMPLETE;
+                    iAutoNextStep = AutoState.PU_COMPLETE;
                     break;
 
-                case STATE.PU_COMPLETE:
-
+                case AutoState.PU_COMPLETE:
                     isPowerUpFinish = true;
                     if (listenerBrokerConnectJob.Client == null)
                     {
                         isPowerUpFinish = false;
                     }
 
-                    if (simHardwareMap.Count == 0)
-                    {
-                        isPowerUpFinish = false;
-                    }
-
                     if (isPowerUpFinish)
                     {
-                        iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
+                        iAutoNextStep = AutoState.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     }
                     else
                     {
-                        iAutoNextStep = STATE.PU_SETUP_CONNECTION_WITH_BROKER;
+                        iAutoNextStep = AutoState.PU_SETUP_CONNECTION_WITH_BROKER;
                     }
                     break;
 
@@ -444,28 +424,31 @@ namespace HardwareSimMqtt
         {
             switch (iAutoNextStep)
             {
-                case STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST:
+                case AutoState.AUTO_WAIT_NEW_MESSAGE_BROADCAST:
                     if (queuePacketInfoReceived.Count == 0)
                     {
                         break;
                     }
                     string log = String.Format("New packet received count: {0}", queuePacketInfoReceived.Count);
-                    ListenerLogInfo(log, Color.Blue);
-                    iAutoNextStep = STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE;
+                    SystemHelper.PrintMessage(LInfo, log, Color.Blue);
+                    iAutoNextStep = AutoState.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE;
                     break;
 
-                case STATE.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE:
-                    TranslatePacketReceived();
-                    iAutoNextStep = monitorJobThread.QueuedJob.Count > 0 ? STATE.AUTO_UPDATE_HARDWARE_STATE : STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
-                    //Debug.WriteLine(monitorJobThread.QueuedJob.ToString());
+                case AutoState.AUTO_PRE_TRANSLATE_RECEIVED_MESSAGE:
+                    int translatedPacketCount = 0;
+                    if (queuePacketInfoReceived.Count != 0)
+                    {
+                        translatedPacketCount = TranslatePacketReceived();
+                    }
+                    iAutoNextStep = translatedPacketCount > 0 ? AutoState.AUTO_UPDATE_DEVICE_STATE : AutoState.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
-                case STATE.AUTO_UPDATE_HARDWARE_STATE:
-                    //Task query thread will update the hardware state
-                    iAutoNextStep = STATE.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
+                case AutoState.AUTO_UPDATE_DEVICE_STATE:
+                    //Task query thread will update the device state
+                    iAutoNextStep = AutoState.AUTO_WAIT_NEW_MESSAGE_BROADCAST;
                     break;
 
-                case STATE.PE_SYSTEM_SHUTDOWN:
+                case AutoState.PE_SYSTEM_SHUTDOWN:
                 default:
                     break;
 
@@ -479,17 +462,17 @@ namespace HardwareSimMqtt
             while (queuePacketInfoReceived.Count > 0)
             {
                 PacketInfo packetReceived = queuePacketInfoReceived.Dequeue();
-                if (packetReceived.headerTopic == TOPIC)
+                if (packetReceived.HeaderTopic == TOPIC)
                 {
-                    for (int i = 0; i < packetReceived.bitInfoList.Count; i++)
+                    for (int i = 0; i < packetReceived.BitInfoList.Count; i++)
                     {
-                        foreach (KeyValuePair<uint, HardwareBase> kvp in simHardwareMap)
+                        foreach (KeyValuePair<uint, DeviceBase> kvp in simulatedDeviceDict)
                         {
-                            if (kvp.Value.Id == packetReceived.bitInfoList[i].Id)
+                            if (kvp.Value.Id == packetReceived.BitInfoList[i].Id)
                             {
-                                monitorJobThread.QueuedJob.Enqueue(new SetHardwareStateJob(kvp.Value, packetReceived.bitInfoList[i].BitState, 1000), 1);
-                                string log = String.Format("TranslatePacketReceived. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}", packetReceived.bitInfoList[i].Id, kvp.Value.BitMask.ToString("X"), packetReceived.bitInfoList[i].BitState.ToString("X"));
-                                ListenerLogInfo(log, Color.Blue);
+                                monitorTaskJobThread.QueuedJob.Enqueue(new SetDeviceStateJob(kvp.Value, packetReceived.BitInfoList[i].BitState, 1000), 1);
+                                string log = String.Format("TranslatePacketReceived. HWID: {0}, mask bit: 0x{1:D4}, received state bit: 0x{2:D4}", packetReceived.BitInfoList[i].Id, kvp.Value.BitMask.ToString("X"), packetReceived.BitInfoList[i].BitState.ToString("X"));
+                                SystemHelper.PrintMessage(LInfo, log, Color.Blue);
                                 translatedPacketCount++;
                             }
                         }

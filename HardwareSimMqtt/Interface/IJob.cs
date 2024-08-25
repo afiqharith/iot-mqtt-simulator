@@ -4,9 +4,14 @@ namespace HardwareSimMqtt.Interface
 {
     public interface IJob
     {
-        HardwareBase Hardware
+        DeviceBase DeviceBase
         {
             get;
+        }
+
+        bool IsCompleted 
+        { 
+            get; 
         }
 
         void Run();

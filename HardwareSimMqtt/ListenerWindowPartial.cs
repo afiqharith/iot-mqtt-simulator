@@ -55,7 +55,7 @@ namespace HardwareSimMqtt
                             {
                                 BitInfo bitInfo = kvp.Value;
                                 string log = String.Format("ID[{0}] HW state change command published. HWID: {1}, cmd bit: 0x{2:D4}", kvp.Key, bitInfo.Id, bitInfo.BitState.ToString("X"));
-                                ContollerLogInfo(log, bitInfo.BitState != 0 ? Color.Blue : Color.OrangeRed);
+                                SystemHelper.PrintMessage(CInfo, log, bitInfo.BitState != 0 ? Color.Blue : Color.OrangeRed);
                             }
                         }
                     }
@@ -67,12 +67,12 @@ namespace HardwareSimMqtt
                 for (int i = 0; i < e.BitInfoList.Count; i++)
                 {
                     //Queue HardwareInfoList content to display on UI 
-                    Dictionary<ushort, BitInfo> messageMap = new Dictionary<ushort, BitInfo>();
-                    messageMap.Add(e.MessageId, e.BitInfoList[i]);
-                    queueBufferMessageToDisplay.Enqueue(messageMap);
+                    Dictionary<ushort, BitInfo> messageDict = new Dictionary<ushort, BitInfo>();
+                    messageDict.Add(e.MessageId, e.BitInfoList[i]);
+                    queueBufferMessageToDisplay.Enqueue(messageDict);
 
                     string log = String.Format("ID[{0}] HW state change command sent. HWID: {1}, cmd bit: 0x{2:D4}", e.MessageId, e.BitInfoList[i].Id, e.BitInfoList[i].BitState.ToString("X"));
-                    ContollerLogInfo(log, Color.Gray);
+                    SystemHelper.PrintMessage(CInfo, log, Color.Gray);
                 }
             };
         }
@@ -89,18 +89,18 @@ namespace HardwareSimMqtt
                 bitInfoListTemp = new List<BitInfo>();
             }
 
-            if (bitInfoListTemp.Count != simHardwareMap.Count || bitInfoListTemp.Count == 0)
+            if (bitInfoListTemp.Count != simulatedDeviceDict.Count || bitInfoListTemp.Count == 0)
             {
                 bitInfoListTemp.AddRange(bitInfoList);
             }
 
-            if(bitInfoListTemp.Count == simHardwareMap.Count)
+            if(bitInfoListTemp.Count == simulatedDeviceDict.Count)
             {
                 string jsonifiedAllBitInfoList = JsonConvert.SerializeObject(new JsonBitInfoList(bitInfoListTemp));
 
                 if (controllerBrokerConnectJob.Client.IsConnected)
                 {
-                    //Publish JSON converted HardwareInfoList to MQTT server
+                    //Publish JSON converted BitInfoList to MQTT server
                     ushort msgID = controllerBrokerConnectJob.Client.Publish(
                         TOPIC,
                         Encoding.UTF8.GetBytes(jsonifiedAllBitInfoList),
@@ -130,9 +130,6 @@ namespace HardwareSimMqtt
             }
         }
 
-        private void ContollerLogInfo(string text, Color color)
-        {
-            SystemHelper.AppendRichTextBox(richTextBox2, text, color);
-        }
+
     }
 }

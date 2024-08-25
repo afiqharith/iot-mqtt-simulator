@@ -3,10 +3,11 @@ using System.Drawing;
 using HardwareSimMqtt.Model.BitMap;
 using HardwareSimMqtt.UIComponent;
 using HardwareSimMqtt.HardwareHub;
+using HardwareSimMqtt.Utils;
 
 namespace HardwareSimMqtt.Model
 {
-    internal class SimLamp : HardwareBase
+    internal class SimLamp : DeviceBase
     {
         private Panel _pPanel = null;
         private Panel pPanel
@@ -15,7 +16,7 @@ namespace HardwareSimMqtt.Model
             set => _pPanel = value;
         }
 
-        public UiHardwareViewerGroup HardwareViewer 
+        public UiDeviceViewerGroup DeviceViewer 
         { 
             get; 
             set; 
@@ -31,18 +32,21 @@ namespace HardwareSimMqtt.Model
                     pPanel.BackColor = GetUiBackColorIndicator(IsOn);
                 }
 
-                if (HardwareViewer != null)
+                if (DeviceViewer != null)
                 {
-                    HardwareViewer.ToggleUiLamp(IsOn);
+                    DeviceViewer.UpdateUi(IsOn, DeviceViewer.UpdateUiLamp);
                 }
             }
         }
 
-        public SimLamp(string id, eBitMask mask, eGroup location, eIoType ioType, int ioPort)
-            : base(id, mask, eHardwareType.LAMP, location, ioType, ioPort) { }
+        public SimLamp(string id, DeviceBitMask deviceBitMask, DeviceGroup deviceGroup, IoType ioType, int ioPort)
+            : base(id, deviceBitMask, DeviceType.LAMP, deviceGroup, ioType, ioPort) { }
 
-        public SimLamp(string id, eBitMask mask, eGroup location, eIoType ioType, string portName, int baudRate)
-            : base(id, mask, eHardwareType.LAMP, location, ioType, portName, baudRate) { }
+        public SimLamp(string id, DeviceBitMask deviceBitMask, DeviceGroup deviceGroup, IoType ioType, string portName, int baudRate)
+            : base(id, deviceBitMask, DeviceType.LAMP, deviceGroup, ioType, portName, baudRate) { }
+
+        public SimLamp(DevcieConfig deviceConfig)
+            : base(deviceConfig) { }
 
         //Deprecated: Currently not in use
         public void BindWithUIComponent(Panel panel)

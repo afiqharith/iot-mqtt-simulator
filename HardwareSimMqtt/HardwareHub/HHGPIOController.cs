@@ -29,13 +29,13 @@ namespace HardwareSimMqtt.HardwareHub
             }
         }
 
-        public virtual eControllerType ControllerType
+        public virtual ControllerType ControllerType
         {
             get;
             private set;
         }
 
-        public virtual eIoType IoType
+        public virtual IoType IoType
         {
             get;
             private set;
@@ -47,11 +47,11 @@ namespace HardwareSimMqtt.HardwareHub
             set;
         }
 
-        public HHGPIOController(eIoType ioType, int ioPort)
+        public HHGPIOController(IoType ioType, int ioPort)
         {
             this.IoType = ioType;
             this.IoPort = ioPort;
-            this.ControllerType = eControllerType.GPIO;
+            this.ControllerType = ControllerType.GPIO;
             Controller = new GpioController();
         }
 
@@ -62,11 +62,11 @@ namespace HardwareSimMqtt.HardwareHub
             {
                 if (!Controller.IsPinOpen(this.IoPort))
                 {
-                    if (this.IoType == eIoType.DigitalInput)
+                    if (this.IoType == IoType.DigitalInput)
                     {
                         SetDigitalInput(this.IoPort);
                     }
-                    else if (this.IoType == eIoType.DigitalOutput)
+                    else if (this.IoType == IoType.DigitalOutput)
                     {
                         SetDigitalOutput(this.IoPort);
                     }

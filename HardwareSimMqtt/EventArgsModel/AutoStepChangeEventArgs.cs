@@ -9,19 +9,19 @@ namespace HardwareSimMqtt.EventArgsModel
 {
     public class AutoStepChangeEventArgs : EventArgs
     {
-        public STATE OldStep
+        public AutoState OldStep
         {
             get;
             set;
         }
 
-        public STATE NewStep
+        public AutoState NewStep
         {
             get;
             set;
         }
 
-        public AutoStepChangeEventArgs(STATE oldStep, STATE newStep)
+        public AutoStepChangeEventArgs(AutoState oldStep, AutoState newStep)
         {
             this.OldStep = oldStep;
             this.NewStep = newStep;

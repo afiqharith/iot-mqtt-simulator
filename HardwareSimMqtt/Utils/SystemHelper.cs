@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -49,5 +50,13 @@ namespace HardwareSimMqtt
                 action();
             }
         }
+
+
+        public static void PrintMessage(Action<string, Color> loggerAction, string message, Color color)
+        {
+            loggerAction(message, color);
+        }
+
+
     }
 }

@@ -105,7 +105,6 @@
   <ItemGroup>
     <Compile Include="EventArgsModel\AutoStepChangeEventArgs.cs" />
     <Compile Include="EventArgsModel\PublishBitInfoToBrokerEventArgs.cs" />
-    <Compile Include="HardwareHub\CentralController.cs" />
     <Compile Include="HardwareHub\HHGPIOController.cs" />
     <Compile Include="HardwareHub\HHSerialPortController.cs" />
     <Compile Include="HardwareHub\HHEmuGPIOController.cs" />
@@ -120,33 +119,42 @@
     <Compile Include="ListenerWindowPartial.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\IHardware.cs" />
+    <Compile Include="Interface\IDevice.cs" />
+    <Compile Include="MainSystem.cs" />
     <Compile Include="Model\BitMap\BitMap.cs" />
     <Compile Include="Model\DataContainer\BitInfo.cs" />
     <Compile Include="Model\DataContainer\JsonBitInfoList.cs" />
     <Compile Include="Model\EnumParam.cs" />
+    <Compile Include="Model\QueryJob\ConnectDeviceJob.cs" />
     <Compile Include="Model\QueryJob\MonitorTaskThread.cs" />
     <Compile Include="Model\QueryJob\PriorityQueue.cs" />
-    <Compile Include="Model\QueryJob\ReadHardwareStateJob.cs" />
+    <Compile Include="Model\QueryJob\ReadDeviceStateJob.cs" />
     <Compile Include="Model\QueryJob\SetBrokerConnectJob.cs" />
-    <Compile Include="Model\QueryJob\SetHardwareStateJob.cs" />
+    <Compile Include="Model\QueryJob\SetDeviceStateJob.cs" />
     <Compile Include="Model\SimLamp.cs" />
     <Compile Include="Model\SimFan.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Model\HardwareBase.cs" />
-    <Compile Include="SystemHelper.cs" />
-    <Compile Include="UIComponent\UiHardwareControllerGroup.cs">
+    <Compile Include="Model\DeviceBase.cs" />
+    <Compile Include="UIComponent\UiMainPage.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="UIComponent\UiHardwareControllerGroup.Designer.cs">
-      <DependentUpon>UiHardwareControllerGroup.cs</DependentUpon>
+    <Compile Include="UIComponent\UiMainPage.Designer.cs">
+      <DependentUpon>UiMainPage.cs</DependentUpon>
     </Compile>
-    <Compile Include="UIComponent\UiHardwareViewerGroup.cs">
+    <Compile Include="Utils\ConfigSetting.cs" />
+    <Compile Include="Utils\SystemHelper.cs" />
+    <Compile Include="UIComponent\UiDeviceControllerGroup.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="UIComponent\UiHardwareViewerGroup.Designer.cs">
-      <DependentUpon>UiHardwareViewerGroup.cs</DependentUpon>
+    <Compile Include="UIComponent\UiDeviceControllerGroup.Designer.cs">
+      <DependentUpon>UiDeviceControllerGroup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UIComponent\UiDeviceViewerGroup.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UIComponent\UiDeviceViewerGroup.Designer.cs">
+      <DependentUpon>UiDeviceViewerGroup.cs</DependentUpon>
     </Compile>
     <EmbeddedResource Include="ListenerWindow.resx">
       <DependentUpon>ListenerWindow.cs</DependentUpon>
@@ -161,11 +169,14 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="UIComponent\UiHardwareControllerGroup.resx">
-      <DependentUpon>UiHardwareControllerGroup.cs</DependentUpon>
+    <EmbeddedResource Include="UIComponent\UiDeviceControllerGroup.resx">
+      <DependentUpon>UiDeviceControllerGroup.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="UIComponent\UiHardwareViewerGroup.resx">
-      <DependentUpon>UiHardwareViewerGroup.cs</DependentUpon>
+    <EmbeddedResource Include="UIComponent\UiDeviceViewerGroup.resx">
+      <DependentUpon>UiDeviceViewerGroup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UIComponent\UiMainPage.resx">
+      <DependentUpon>UiMainPage.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

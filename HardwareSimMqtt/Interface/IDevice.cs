@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HardwareSimMqtt.Interface
 {
-    internal interface IHardware: IHardwarePartial
+    internal interface IDevice: IDevicePartial
     {
         uint BitMask
         {
@@ -25,7 +25,7 @@ namespace HardwareSimMqtt.Interface
         void Off();
     }
 
-    internal interface IHardwarePartial
+    internal interface IDevicePartial
     {
         string Id
         {

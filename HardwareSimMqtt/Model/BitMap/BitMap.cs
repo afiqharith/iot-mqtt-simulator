@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace HardwareSimMqtt.Model.BitMap
 {
-    public enum eBitMask
+    public enum DeviceBitMask: int
     {
+        Invalid = -1,
         Bit0 = 1 << 0, //0x0001 //Fan1
         Bit1 = 1 << 1, //0x0002 //Fan2
         Bit2 = 1 << 2, //0x0004 //Fan3
@@ -23,7 +24,14 @@ namespace HardwareSimMqtt.Model.BitMap
         Bit12 = 1 << 12,
         Bit13 = 1 << 13,
         Bit14 = 1 << 14,
-        Bit15 = 1 << 15,
-        Bit16 = 1 << 16,
+        Bit15 = 1 << 15
+    }
+
+    public enum BoardNode
+    {
+        Node1,
+        Node2,
+        Node3,
+        Node4,
     }
 }

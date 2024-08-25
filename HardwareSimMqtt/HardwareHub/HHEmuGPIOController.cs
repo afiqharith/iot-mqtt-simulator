@@ -31,23 +31,23 @@ namespace HardwareSimMqtt.HardwareHub
             }
         }
 
-        public virtual eControllerType ControllerType
+        public virtual ControllerType ControllerType
         {
             get;
             private set;
         }
 
-        public virtual eIoType IoType
+        public virtual IoType IoType
         {
             get;
             private set;
         }
 
-        public HHEmuGPIOController(eIoType ioType, int ioPort)
+        public HHEmuGPIOController(IoType ioType, int ioPort)
         {
             this.IoType = ioType;
             this.IoPort = ioPort;
-            this.ControllerType = eControllerType.EmuGPIO;
+            this.ControllerType = ControllerType.EmuGPIO;
             LibGpio.Gpio.TestMode = true;
         }
 
@@ -58,12 +58,12 @@ namespace HardwareSimMqtt.HardwareHub
             {
                 if (!bRet)
                 {
-                    if (this.IoType == eIoType.DigitalInput)
+                    if (this.IoType == IoType.DigitalInput)
                     {
                         SetDigitalInput(this.IoPort);
                         bRet = true;
                     }
-                    else if (this.IoType == eIoType.DigitalOutput)
+                    else if (this.IoType == IoType.DigitalOutput)
                     {
                         SetDigitalOutput(this.IoPort);
                         bRet = true;

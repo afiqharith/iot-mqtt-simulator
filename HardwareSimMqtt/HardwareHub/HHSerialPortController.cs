@@ -33,21 +33,21 @@ namespace HardwareSimMqtt.HardwareHub
             set;
         }
 
-        public virtual eControllerType ControllerType
+        public virtual ControllerType ControllerType
         {
             get;
             private set;
         }
-        public virtual eIoType IoType
+        public virtual IoType IoType
         {
             get;
             private set;
         }
 
-        public HHSerialPortController(eIoType ioType, string portName, int baudRate)
+        public HHSerialPortController(IoType ioType, string portName, int baudRate)
         {
             IoType = ioType;
-            ControllerType = eControllerType.SerialPort;
+            ControllerType = ControllerType.SerialPort;
             PortName = portName;
             BaudRate = baudRate;
             serialPort = new SerialPort(PortName, BaudRate);

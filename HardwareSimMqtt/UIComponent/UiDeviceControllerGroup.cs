@@ -12,15 +12,15 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 
 namespace HardwareSimMqtt.UIComponent
 {
-    public partial class UiHardwareControllerGroup : UserControl
+    public partial class UiDeviceControllerGroup : UserControl
     {
-        private eGroup _egroup;
-        public eGroup GroupLocation
+        private DeviceGroup _deviceGroup;
+        public DeviceGroup DeviceGroup
         {
-            get => _egroup;
+            get => _deviceGroup;
             set
             {
-                _egroup = value;
+                _deviceGroup = value;
                 GroupBoxLoc.Text = String.Format("Group Loc{0}", (int)value);
             }
         }
@@ -30,20 +30,23 @@ namespace HardwareSimMqtt.UIComponent
             get => CheckBoxLamp.Text;
             set
             {
-                CheckBoxLamp.Text = String.Format("Lamp ID{0}", (int)GroupLocation);
+                CheckBoxLamp.Text = String.Format("Lamp ID{0}", (int)DeviceGroup);
                 CheckBoxLamp.Tag = value;
                 CheckBoxLamp.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
             }
         }
 
-        private eBitMask _checkBoxLampMask;
-        public eBitMask CheckBoxLampMask
+        private DeviceBitMask _checkBoxLampMask;
+        public DeviceBitMask CheckBoxLampMask
         {
             get => _checkBoxLampMask;
             set
             {
                 _checkBoxLampMask = value;
-                checkBoxMaskMap.Add(CheckBoxLamp, value);
+                if (!checkBoxMaskMap.ContainsKey(CheckBoxLamp))
+                {
+                    checkBoxMaskMap.Add(CheckBoxLamp, value);
+                }
             }
         }
 
@@ -52,41 +55,45 @@ namespace HardwareSimMqtt.UIComponent
             get => CheckBoxFan.Text;
             set
             {
-                CheckBoxFan.Text = String.Format("Fan ID{0}", (int)GroupLocation);
+                CheckBoxFan.Text = String.Format("Fan ID{0}", (int)DeviceGroup);
                 CheckBoxFan.Tag = value;
                 CheckBoxFan.CheckStateChanged += new EventHandler(CheckboxUnit_OnCheckStateChanged);
             }
         }
 
-        private eBitMask _checkBoxFanMask;
-        public eBitMask CheckBoxFanMask
+        private DeviceBitMask _checkBoxFanMask;
+        public DeviceBitMask CheckBoxFanMask
         {
             get => _checkBoxFanMask;
             set
             {
                 _checkBoxFanMask = value;
-                checkBoxMaskMap.Add(CheckBoxFan, value);
+                if (!checkBoxMaskMap.ContainsKey(CheckBoxFan))
+                {
+                    checkBoxMaskMap.Add(CheckBoxFan, value);
+                }
             }
         }
 
-        private Dictionary<CheckBox, eBitMask> checkBoxMaskMap
+        private Dictionary<CheckBox, DeviceBitMask> checkBoxMaskMap
         {
             get;
             set;
         }
-
         private ListenerWindow ParentWindow
         {
             get => Program.WndHandle;
         }
 
-        public UiHardwareControllerGroup(eGroup egroup)
+        private delegate void SendMessage(List<BitInfo> bitInfoList);
+
+        public UiDeviceControllerGroup(DeviceGroup egroup)
         {
             InitializeComponent();
-            GroupLocation = egroup;
+            DeviceGroup = egroup;
             CheckBoxBoth.Text = "Both";
             CheckBoxBoth.CheckStateChanged += new EventHandler(CheckboxBoth_OnCheckStateChanged);
-            checkBoxMaskMap = new Dictionary<CheckBox, eBitMask>();
+            checkBoxMaskMap = new Dictionary<CheckBox, DeviceBitMask>();
         }
 
         private void CheckboxUnit_OnCheckStateChanged(object sender, EventArgs e)
@@ -99,7 +106,7 @@ namespace HardwareSimMqtt.UIComponent
 
             List<BitInfo> bitInfoList = new List<BitInfo>();
 
-            foreach (KeyValuePair<CheckBox, eBitMask> kvp in checkBoxMaskMap)
+            foreach (KeyValuePair<CheckBox, DeviceBitMask> kvp in checkBoxMaskMap)
             {
                 if (checkbox.Tag == kvp.Key.Tag)
                 {
@@ -120,7 +127,7 @@ namespace HardwareSimMqtt.UIComponent
 
             List<BitInfo> bitInfoList = new List<BitInfo>();
 
-            foreach (KeyValuePair<CheckBox, eBitMask> kvp in checkBoxMaskMap)
+            foreach (KeyValuePair<CheckBox, DeviceBitMask> kvp in checkBoxMaskMap)
             {
                 kvp.Key.CheckStateChanged -= new EventHandler(CheckboxUnit_OnCheckStateChanged);
                 kvp.Key.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;
@@ -142,7 +149,7 @@ namespace HardwareSimMqtt.UIComponent
 
             List<BitInfo> bitInfoList = new List<BitInfo>();
 
-            foreach (KeyValuePair<CheckBox, eBitMask> kvp in checkBoxMaskMap)
+            foreach (KeyValuePair<CheckBox, DeviceBitMask> kvp in checkBoxMaskMap)
             {
                 kvp.Key.CheckStateChanged -= new EventHandler(CheckboxUnit_OnCheckStateChanged);
                 kvp.Key.CheckState = checkbox.Checked ? CheckState.Indeterminate : CheckState.Unchecked;

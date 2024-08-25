@@ -5,10 +5,11 @@ using System.Threading;
 using HardwareSimMqtt.Model.BitMap;
 using HardwareSimMqtt.Interface;
 using HardwareSimMqtt.HardwareHub;
+using HardwareSimMqtt.Utils;
 
 namespace HardwareSimMqtt.Model
 {
-    public enum eHardwareType
+    public enum DeviceType
     {
         LAMP,
         FAN,
@@ -16,9 +17,9 @@ namespace HardwareSimMqtt.Model
         GATE,
     }
 
-    public enum eGroup
+    public enum DeviceGroup
     {
-        Non = -1,
+        Invalid = -1,
         Group1 = 1,
         Group2,
         Group3,
@@ -39,7 +40,7 @@ namespace HardwareSimMqtt.Model
         Location4
     }
 
-    public class HardwareBase : IHardware
+    public class DeviceBase : IDevice
     {
         private string _id;
         public virtual string Id
@@ -48,22 +49,22 @@ namespace HardwareSimMqtt.Model
             protected set
             {
                 string createdId = String.Empty;
-                switch (Type)
+                switch (DeviceType)
                 {
                     default:
-                    case eHardwareType.LAMP:
+                    case DeviceType.LAMP:
                         createdId = String.Format("HWLID{0}", value);
                         break;
 
-                    case eHardwareType.FAN:
+                    case DeviceType.FAN:
                         createdId = String.Format("HWFID{0}", value);
                         break;
 
-                    case eHardwareType.AIR_CONDITIONER:
+                    case DeviceType.AIR_CONDITIONER:
                         createdId = String.Format("HWACID{0}", value);
                         break;
 
-                    case eHardwareType.GATE:
+                    case DeviceType.GATE:
                         createdId = String.Format("HWGID{0}", value);
                         break;
                 }
@@ -71,13 +72,13 @@ namespace HardwareSimMqtt.Model
             }
         }
 
-        public virtual eHardwareType Type
+        public virtual DeviceType DeviceType
         {
             get;
             protected set;
         }
 
-        public virtual eGroup Group
+        public virtual DeviceGroup DeviceGroup
         {
             get;
             protected set;
@@ -97,7 +98,7 @@ namespace HardwareSimMqtt.Model
 
         public virtual bool IsOff => !IsOn;
 
-        // Bit index for the hardware, bit map
+        // Bit index for the device, bit map
         private uint _bitMask = 0;
         public virtual uint BitMask
         {
@@ -105,12 +106,12 @@ namespace HardwareSimMqtt.Model
             protected set
             {
                 _bitMask = value;
-                //Map with hardware bit
+                //Map with device bit
                 ComController.BitMask = value;
             }
         }
 
-        // Bit state of the hardware at the bit index
+        // Bit state of the device at the bit index
         private uint _bitState = 0;
         public virtual uint BitState
         {
@@ -141,35 +142,54 @@ namespace HardwareSimMqtt.Model
         }
 
         //Using GPIO
-        public HardwareBase(string id, eBitMask mask, eHardwareType type, eGroup group, eIoType ioType, int ioPort)
+        public DeviceBase(string id, DeviceBitMask deviceBitMask, DeviceType deviceType, DeviceGroup deviceGroup, IoType ioType, int ioPort)
         {
 #if !SIMULATE
             ComController = new HHGPIOController(ioType, ioPort);
 #else
-            //ComController = new HHEmuGPIOController(ioType, ioPort);
-            Program.CentralController.HardwareComMap.Add((uint)mask, new HardwareComm(this, new HHEmuGPIOController(ioType, ioPort)));
-            ComController = Program.CentralController.GetComController((uint)mask);
+            ComController = new HHEmuGPIOController(ioType, ioPort);
 #endif
-            Type = type;
-            Group = group;
+            DeviceType = deviceType;
+            DeviceGroup = deviceGroup;
             Id = id;
-            BitMask = (uint)mask;
+            BitMask = (uint)deviceBitMask;
 
 
         }
 
         //Using SerialPort
-        public HardwareBase(string id, eBitMask mask, eHardwareType type, eGroup group, eIoType ioType, string portName, int baudRate = 9600)
+        public DeviceBase(string id, DeviceBitMask deviceBitMask, DeviceType type, DeviceGroup deviceGroup, IoType ioType, string portName, int baudRate = 9600)
         {
-            //ComController = new HHSerialPortController(ioType, portName, baudRate);
-            Program.CentralController.HardwareComMap.Add((uint)mask, new HardwareComm(this, new HHSerialPortController(ioType, portName, baudRate)));
-            ComController = Program.CentralController.GetComController((uint)mask);
-            
+            ComController = new HHSerialPortController(ioType, portName, baudRate);
             Id = id;
-            BitMask = (uint)mask;
-            Type = type;
-            Group = group;
+            BitMask = (uint)deviceBitMask;
+            DeviceType = type;
+            DeviceGroup = deviceGroup;
         }
+        
+        //General
+        public DeviceBase(DevcieConfig deviceConfig)
+        {
+
+            if (deviceConfig.ControllerType == ControllerType.GPIO)
+            {
+#if !SIMULATE
+                ComController = new HHGPIOController(deviceConfig.IoType, deviceConfig.IoPort);
+#else
+                ComController = new HHEmuGPIOController(deviceConfig.IoType, deviceConfig.IoPort);
+#endif
+            }
+            else if(deviceConfig.ControllerType == ControllerType.SerialPort)
+            {
+                ComController = new HHSerialPortController(deviceConfig.IoType, deviceConfig.ComPort, deviceConfig.Baudrate);
+            }
+
+            DeviceType = deviceConfig.DeviceType;
+            DeviceGroup = deviceConfig.Group;
+            Id = deviceConfig.Id;
+            BitMask = (uint)deviceConfig.BitMask;
+        }
+
 
         public virtual uint GetNewBitStateValue(uint newBitState) => BitMask & newBitState;
 
@@ -179,33 +199,33 @@ namespace HardwareSimMqtt.Model
 
         public virtual bool Connect()
         {
-            int iAttempt = 0;
+            int attempt = 0;
             int elapsedTime = 0;
             int timeStart = Environment.TickCount;
-            while (!IsConnected && iAttempt < 3)
+            while (!IsConnected && attempt < 3)
             {
                 try
                 {
-                    //Attempt hardware connection here
+                    //Attempt device connection here
                     IsConnected = ComController.OpenPort();
                 }
                 catch
                 {
                     Thread.Sleep(200);
                 }
-                iAttempt++;
+                attempt++;
             }
 
-            if (IsConnected && iAttempt == 1) //Only log when there is attempt to connect, otherwise it already connect
+            if (IsConnected && attempt == 1) //Only log when there is attempt to connect, otherwise it already connect
             {
                 elapsedTime = Environment.TickCount - timeStart;
                 Debug.WriteLine(String.Format("{0} connected. Bit: 0x{1:D4}, Elapsed: {2}ms", Id, BitMask.ToString("X"), elapsedTime));
             }
 
-            if (iAttempt > 2)
+            if (!IsConnected && attempt > 2)
             {
                 elapsedTime = Environment.TickCount - timeStart;
-                string exLog = String.Format("{0} Failed {1} attempt to connect. Bit: 0x{1:D4}, Elapsed: {2}ms", Id, iAttempt, BitMask.ToString("X"), elapsedTime);
+                string exLog = String.Format("{0} Failed {1} attempt to connect. Bit: 0x{1:D4}, Elapsed: {2}ms", Id, attempt, BitMask.ToString("X"), elapsedTime);
                 Debug.WriteLine(exLog);
                 throw new Exception(exLog);
             }

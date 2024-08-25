@@ -16,7 +16,7 @@ namespace HardwareSimMqtt.Model.QueryJob
             get;
         }
 
-        public Dictionary<uint, HardwareBase> HardwareMap
+        public Dictionary<uint, DeviceBase> DeviceDict
         {
             private get;
             set;
@@ -28,10 +28,10 @@ namespace HardwareSimMqtt.Model.QueryJob
             set;
         }
 
-        public MonitorTaskThread(Dictionary<uint, HardwareBase> hardwareMap)
+        public MonitorTaskThread(Dictionary<uint, DeviceBase> deviceDict)
         {
             QueuedJob = new PriorityQueue<IJob>();
-            HardwareMap = hardwareMap;
+            DeviceDict = deviceDict;
             InitializeThread();
         }
 
@@ -42,9 +42,9 @@ namespace HardwareSimMqtt.Model.QueryJob
         }
 
         private void InitializeThread()
-        {            
+        {
             monitorJobQueryThread = new Thread(() => MonitorJobQuery(Program.CancelTokenSource.Token));
-            
+
             if (!monitorJobQueryThread.IsAlive)
             {
                 monitorJobQueryThread.Start();
@@ -61,35 +61,24 @@ namespace HardwareSimMqtt.Model.QueryJob
 
                     if (taskJob != null)
                     {
-                        if (taskJob.GetType() == typeof(SetHardwareStateJob))
+                        if (taskJob.GetType() == typeof(SetDeviceStateJob))
                         {
-                            SetHardwareStateJob setHardwareStateJob = (SetHardwareStateJob)taskJob;
-                            if (HardwareMap != null)
+                            SetDeviceStateJob setDeviceStateJob = (SetDeviceStateJob)taskJob;
+                            if (DeviceDict != null)
                             {
-                                foreach (KeyValuePair<uint, HardwareBase> kvp in HardwareMap)
+                                foreach (KeyValuePair<uint, DeviceBase> kvp in DeviceDict)
                                 {
-                                    if (kvp.Value.Id == setHardwareStateJob.Hardware.Id)
+                                    if (kvp.Value.Id == setDeviceStateJob.DeviceBase.Id)
                                     {
-                                        setHardwareStateJob.Run();
-                                        QueuedJob.Enqueue(new ReadHardwareStateJob(kvp.Value), 3);
+                                        setDeviceStateJob.Run();
+                                        QueuedJob.Enqueue(new ReadDeviceStateJob(kvp.Value), 3);
                                     }
                                 }
                             }
                         }
-
-                        if (taskJob.GetType() == typeof(ReadHardwareStateJob))
+                        else
                         {
-                            ReadHardwareStateJob readHardwareStateJob = (ReadHardwareStateJob)taskJob;
-                            if (HardwareMap != null)
-                            {
-                                foreach (KeyValuePair<uint, HardwareBase> kvp in HardwareMap)
-                                {
-                                    if (kvp.Value.Id == readHardwareStateJob.Hardware.Id)
-                                    {
-                                        readHardwareStateJob.Run();
-                                    }
-                                }
-                            }
+                            taskJob.Run();
                         }
                     }
 

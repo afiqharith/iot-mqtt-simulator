@@ -11,10 +11,10 @@ using System.Windows.Forms;
 
 namespace HardwareSimMqtt.UIComponent
 {
-    public partial class UiHardwareViewerGroup : UserControl
+    public partial class UiDeviceViewerGroup : UserControl
     {
-        private eGroup _egroup;
-        public eGroup GroupLocation
+        private DeviceGroup _egroup;
+        public DeviceGroup GroupLocation
         {
             get => _egroup;
             set
@@ -55,25 +55,41 @@ namespace HardwareSimMqtt.UIComponent
             }
         }
 
-        public UiHardwareViewerGroup(eGroup egroup)
+        public UiDeviceViewerGroup(DeviceGroup egroup)
         {
             InitializeComponent();
             GroupLocation = egroup;
         }
 
-        public UiHardwareViewerGroup()
+        public UiDeviceViewerGroup()
         {
             InitializeComponent();
         }
 
-        public void ToggleUiLamp(bool isOn)
+        public delegate void UpdateUiColor(Color color);
+
+        public void UpdateUi(bool isOn, UpdateUiColor action)
         {
-            splitContainerMain.Panel1.BackColor = GetUiBackColorIndicator(isOn);
+            if(action != null)
+            {
+                Color color = GetUiBackColorIndicator(isOn);
+                action(color);
+            }
         }
 
-        public void ToggleUiFan(bool isOn)
+        public void UpdateUiLamp(Color color)
         {
-            splitContainerMain.Panel2.BackColor = GetUiBackColorIndicator(isOn);
+            splitContainerMain.Panel1.BackColor = color;
+        }
+
+        public void UpdateUiFan(Color color)
+        {
+            splitContainerMain.Panel2.BackColor = color;
+        }
+
+        public void UpdateUiFanRampingSpeed()
+        {
+            splitContainerMain.Panel2.BackColor = Color.Yellow;
         }
 
         private Color GetUiBackColorIndicator(bool isOn) => isOn ? Color.Green : Color.Gray;

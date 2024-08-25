@@ -1,13 +1,13 @@
-﻿namespace HardwareSimMqtt
+﻿namespace HardwareSimMqtt.UIComponent
 {
-    partial class ListenerWindow
+    partial class UiMainPage
     {
-        /// <summary>
+        /// <summary> 
         /// Required designer variable.
         /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
+        /// <summary> 
         /// Clean up any resources being used.
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
@@ -20,42 +20,28 @@
             base.Dispose(disposing);
         }
 
-        #region Windows Form Designer generated code
+        #region Component Designer generated code
 
-        /// <summary>
-        /// Required method for Designer support - do not modify
+        /// <summary> 
+        /// Required method for Designer support - do not modify 
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent()
         {
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.DataGridViewBitSet = new System.Windows.Forms.DataGridView();
-            this.deviceControllerFlowLayoutPanel = new System.Windows.Forms.FlowLayoutPanel();
-            this.deviceViewerFlowLayoutPanel = new System.Windows.Forms.FlowLayoutPanel();
-            this.panel1.SuspendLayout();
+            this.hardwareControllerFlowLayoutPanel = new System.Windows.Forms.FlowLayoutPanel();
+            this.hardwareViewerFlowLayoutPanel = new System.Windows.Forms.FlowLayoutPanel();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.DataGridViewBitSet)).BeginInit();
             this.SuspendLayout();
-            // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.tabControl1);
-            this.panel1.Controls.Add(this.deviceControllerFlowLayoutPanel);
-            this.panel1.Controls.Add(this.deviceViewerFlowLayoutPanel);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(0, 0);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(558, 524);
-            this.panel1.TabIndex = 0;
-            this.panel1.Paint += new System.Windows.Forms.PaintEventHandler(this.panel1_Paint);
             // 
             // tabControl1
             // 
@@ -64,11 +50,11 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Controls.Add(this.tabPage1);
             this.tabControl1.Controls.Add(this.tabPage2);
-            this.tabControl1.Location = new System.Drawing.Point(7, 296);
+            this.tabControl1.Location = new System.Drawing.Point(9, 293);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(536, 222);
-            this.tabControl1.TabIndex = 34;
+            this.tabControl1.TabIndex = 37;
             // 
             // tabPage1
             // 
@@ -140,39 +126,38 @@
             // 
             // hardwareControllerFlowLayoutPanel
             // 
-            this.deviceControllerFlowLayoutPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.hardwareControllerFlowLayoutPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.deviceControllerFlowLayoutPanel.AutoScroll = true;
-            this.deviceControllerFlowLayoutPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.deviceControllerFlowLayoutPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.deviceControllerFlowLayoutPanel.Location = new System.Drawing.Point(11, 154);
-            this.deviceControllerFlowLayoutPanel.Name = "hardwareControllerFlowLayoutPanel";
-            this.deviceControllerFlowLayoutPanel.Size = new System.Drawing.Size(536, 136);
-            this.deviceControllerFlowLayoutPanel.TabIndex = 32;
+            this.hardwareControllerFlowLayoutPanel.AutoScroll = true;
+            this.hardwareControllerFlowLayoutPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.hardwareControllerFlowLayoutPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.hardwareControllerFlowLayoutPanel.Location = new System.Drawing.Point(9, 151);
+            this.hardwareControllerFlowLayoutPanel.Name = "hardwareControllerFlowLayoutPanel";
+            this.hardwareControllerFlowLayoutPanel.Size = new System.Drawing.Size(536, 136);
+            this.hardwareControllerFlowLayoutPanel.TabIndex = 36;
             // 
             // hardwareViewerFlowLayoutPanel
             // 
-            this.deviceViewerFlowLayoutPanel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.hardwareViewerFlowLayoutPanel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.deviceViewerFlowLayoutPanel.AutoScroll = true;
-            this.deviceViewerFlowLayoutPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.deviceViewerFlowLayoutPanel.Location = new System.Drawing.Point(11, 12);
-            this.deviceViewerFlowLayoutPanel.Name = "hardwareViewerFlowLayoutPanel";
-            this.deviceViewerFlowLayoutPanel.Size = new System.Drawing.Size(536, 136);
-            this.deviceViewerFlowLayoutPanel.TabIndex = 19;
+            this.hardwareViewerFlowLayoutPanel.AutoScroll = true;
+            this.hardwareViewerFlowLayoutPanel.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.hardwareViewerFlowLayoutPanel.Location = new System.Drawing.Point(9, 9);
+            this.hardwareViewerFlowLayoutPanel.Name = "hardwareViewerFlowLayoutPanel";
+            this.hardwareViewerFlowLayoutPanel.Size = new System.Drawing.Size(536, 136);
+            this.hardwareViewerFlowLayoutPanel.TabIndex = 35;
             // 
-            // ListenerWindow
+            // UiMainPage
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(558, 524);
-            this.Controls.Add(this.panel1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Name = "ListenerWindow";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Simulation Overview";
-            this.panel1.ResumeLayout(false);
+            this.AutoSize = true;
+            this.Controls.Add(this.tabControl1);
+            this.Controls.Add(this.hardwareControllerFlowLayoutPanel);
+            this.Controls.Add(this.hardwareViewerFlowLayoutPanel);
+            this.Name = "UiMainPage";
+            this.Size = new System.Drawing.Size(558, 524);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
@@ -183,15 +168,13 @@
 
         #endregion
 
-        private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.RichTextBox richTextBox1;
-        private System.Windows.Forms.DataGridView DataGridViewBitSet;
-        private System.Windows.Forms.FlowLayoutPanel deviceViewerFlowLayoutPanel;
-        private System.Windows.Forms.FlowLayoutPanel deviceControllerFlowLayoutPanel;
-        private System.Windows.Forms.RichTextBox richTextBox2;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.RichTextBox richTextBox2;
         private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.RichTextBox richTextBox1;
+        internal System.Windows.Forms.DataGridView DataGridViewBitSet;
+        internal System.Windows.Forms.FlowLayoutPanel hardwareControllerFlowLayoutPanel;
+        internal System.Windows.Forms.FlowLayoutPanel hardwareViewerFlowLayoutPanel;
     }
 }
-

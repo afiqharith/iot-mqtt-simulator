@@ -6,10 +6,11 @@ using HardwareSimMqtt.HardwareHub;
 using System.Threading;
 using System;
 using System.Threading.Tasks;
+using HardwareSimMqtt.Utils;
 
 namespace HardwareSimMqtt.Model
 {
-    internal class SimFan : HardwareBase
+    internal class SimFan : DeviceBase
     {
         private Panel _pPanel = null;
         private Panel pPanel
@@ -18,7 +19,7 @@ namespace HardwareSimMqtt.Model
             set => _pPanel = value;
         }
 
-        public UiHardwareViewerGroup HardwareViewer
+        public UiDeviceViewerGroup DeviceViewer
         {
             private get;
             set;
@@ -35,9 +36,9 @@ namespace HardwareSimMqtt.Model
                     pPanel.BackColor = GetUiBackColorIndicator(IsOn);
                 }
 
-                if (HardwareViewer != null)
+                if (DeviceViewer != null)
                 {
-                    HardwareViewer.ToggleUiFan(IsOn);
+                    DeviceViewer.UpdateUi(IsOn, DeviceViewer.UpdateUiFan);
                 }
             }
         }
@@ -75,13 +76,15 @@ namespace HardwareSimMqtt.Model
                                     _speed = tempSpeed;
                                     base.AnalogData = tempSpeed;
 
-                                    if (HardwareViewer != null)
+                                    if (DeviceViewer != null)
                                     {
-                                        HardwareViewer.DisplayFanSpeed = String.Format("{0}", tempSpeed);
+                                        DeviceViewer.DisplayFanSpeed = String.Format("{0}", tempSpeed);
                                     }
+                                    DeviceViewer.UpdateUiFanRampingSpeed();
                                     Console.WriteLine(DateTime.Now + " " + base.Id + " speed:" + tempSpeed + "rpm");
                                     Thread.Sleep(new Random().Next(1, 50));
                                 }
+                                DeviceViewer.UpdateUi(IsOn, DeviceViewer.UpdateUiFan);
 
                                 while (IsOn && !Program.CancelTokenSource.Token.IsCancellationRequested)
                                 {
@@ -92,9 +95,9 @@ namespace HardwareSimMqtt.Model
                                     _speed = tempSpeed;
                                     base.AnalogData = tempSpeed;
 
-                                    if (HardwareViewer != null)
+                                    if (DeviceViewer != null)
                                     {
-                                        HardwareViewer.DisplayFanSpeed = String.Format("{0}", tempSpeed);
+                                        DeviceViewer.DisplayFanSpeed = String.Format("{0}", tempSpeed);
                                     }
                                     Console.WriteLine(DateTime.Now + " " + base.Id + " speed:" + tempSpeed + "rpm");
                                     Thread.Sleep(1000);
@@ -119,8 +122,6 @@ namespace HardwareSimMqtt.Model
                                     int randRps = new Random().Next(1, rps);
                                     tempSpeed -= randRps;
 
-                                    Thread.Sleep(new Random().Next(50, 100));
-                                    Console.WriteLine(DateTime.Now + " " + base.Id + " speed:" + tempSpeed + "rpm");
                                     if (tempSpeed <= 0)
                                     {
                                         tempSpeed = 0;
@@ -128,11 +129,15 @@ namespace HardwareSimMqtt.Model
                                     _speed = tempSpeed;
                                     base.AnalogData = tempSpeed;
 
-                                    if (HardwareViewer != null)
+                                    if (DeviceViewer != null)
                                     {
-                                        HardwareViewer.DisplayFanSpeed = String.Format("{0}", tempSpeed);
+                                        DeviceViewer.DisplayFanSpeed = String.Format("{0}", tempSpeed);
                                     }
+                                    DeviceViewer.UpdateUiFanRampingSpeed();
+                                    Console.WriteLine(DateTime.Now + " " + base.Id + " speed:" + tempSpeed + "rpm");
+                                    Thread.Sleep(new Random().Next(50, 100));
                                 }
+                                DeviceViewer.UpdateUi(IsOn, DeviceViewer.UpdateUiFan);
                             });
                             thread.Start();
                         }
@@ -141,11 +146,14 @@ namespace HardwareSimMqtt.Model
             }
         }
 
-        public SimFan(string id, eBitMask mask, eGroup group, eIoType ioType, int ioPort)
-            : base(id, mask, eHardwareType.FAN, group, ioType, ioPort) { }
+        public SimFan(string id, DeviceBitMask deviceBitMask, DeviceGroup deviceGroup, IoType ioType, int ioPort)
+            : base(id, deviceBitMask, DeviceType.FAN, deviceGroup, ioType, ioPort) { }
 
-        public SimFan(string id, eBitMask mask, eGroup group, eIoType ioType, string portName, int baudRate)
-            : base(id, mask, eHardwareType.FAN, group, ioType, portName, baudRate) { }
+        public SimFan(string id, DeviceBitMask deviceBitMask, DeviceGroup deviceGroup, IoType ioType, string portName, int baudRate)
+            : base(id, deviceBitMask, DeviceType.FAN, deviceGroup, ioType, portName, baudRate) { }
+
+        public SimFan(DevcieConfig deviceConfig)
+            : base(deviceConfig) { }
 
         public override bool Update()
         {
